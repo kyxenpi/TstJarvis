@@ -33,7 +33,7 @@ tg_app = Application.builder().token(TELEGRAM_TOKEN).build() if TELEGRAM_TOKEN e
 
 MODELO_PRIMARIO = "llama-3.3-70b-versatile"
 MODELO_SECUNDARIO = "llama-3.1-8b-instant"
-MEMORIA_TELEGRAM[chat_id] = MEMORIA_TELEGRAM[chat_id][-15:]
+MEMORIA_TELEGRAM = {}
 
 # Montagem dinâmica do prompt do sistema com suas ferramentas locais
 lista_ferramentas_texto = ""
