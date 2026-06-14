@@ -9,8 +9,15 @@ from groq import Groq
 from telegram import Update
 from telegram.ext import Application
 
-from tool_registry import TOOLS 
+# Importações do seu ecossistema original
+try:
+    from tool_registry import TOOLS 
+except ImportError:
+    TOOLS = {}
 
+app = Flask(__name__)
+
+# Configura a API Key da Groq pegando da Render (ou string vazia se local)
 os.environ["GROQ_API_KEY"] = os.getenv("API_KEY", "")
 
 try:
@@ -18,27 +25,21 @@ try:
 except Exception as e:
     print(f"❌ Erro ao iniciar Groq: {e}")
     sys.exit(1)
-try:
-    client = Groq()
-except Exception as e:
-    print(f"❌ Erro ao iniciar Groq: {e}")
-    sys.exit(1)
 
-app = Flask(__name__)
-
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "SEU_TOKEN_DO_TELEGRAM_AQUI")
-
-tg_app = Application.builder().token(TELEGRAM_TOKEN).build()
+# Configurações do Telegram vindo da Render
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
+tg_app = Application.builder().token(TELEGRAM_TOKEN).build() if TELEGRAM_TOKEN else None
 
 MODELO_PRIMARIO = "llama-3.3-70b-versatile"
 MODELO_SECUNDARIO = "llama-3.1-8b-instant"
 
+# Montagem dinâmica do prompt do sistema com suas ferramentas locais
 lista_ferramentas_texto = ""
 for nome_tool, funcao in TOOLS.items():
     descricao = funcao.__doc__.split('\n')[0].strip() if funcao.__doc__ else "Sem descrição disponível."
     lista_ferramentas_texto += f"- {nome_tool}: {descricao}\n"
 
-SYSTEM_PROMPT = f"""Você é Jarvis, um agente operacional avançado rodando localmente na máquina do usuário.
+SYSTEM_PROMPT = f"""Você é Jarvis, um agente operational avançado rodando localmente na máquina do usuário.
 
 ### REGRAS DE COMPORTAMENTO CRÍTICAS:
 1. **Ações de Sugestão / Perguntas:** Se o usuário não te deu uma ordem direta, mas você acha que uma ferramenta pode ajudar, apenas PERGUNTE se o usuário deseja aquela ação (ex: "Deseja que eu abra o Google Drive para você?"). **NUNCA** envie o JSON da ferramenta junto com essa pergunta. Aguarde a confirmação do usuário.
@@ -58,8 +59,6 @@ Se não precisar usar nenhuma ferramenta ou se estiver apenas fazendo uma pergun
 Ferramentas disponíveis no sistema atualmente:
 {lista_ferramentas_texto}"""
 
-
-
 def tentar_json(texto):
     try:
         return json.loads(texto)
@@ -75,18 +74,11 @@ def executar_tool(tool_name, args):
     except Exception as e:
         return f"Erro ao executar ferramenta: {e}"
 
-
-
 def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
-    """
-    Centraliza a lógica de decisão do Jarvis. 
-    Recebe o texto do usuário e resolve o loop de ferramentas (Agentic Loop) na Groq.
-    """
     mensagens_api = [{"role": "system", "content": SYSTEM_PROMPT}]
     
     if historico_previo:
-        historico_limitado = historico_previo[-10:]
-        for msg in historico_limitado:
+        for msg in historico_previo[-10:]:
             if msg.get("type") != "tool":
                 role = "user" if msg.get("type") == "user" else "assistant"
                 mensagens_api.append({"role": role, "content": msg.get("text", "")})
@@ -114,10 +106,10 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
             except Exception as erro_secundario:
                 return "Todos os motores de IA estão offline.", [{"type": "jarvis", "content": "Erro crítico na API Groq."}]
 
-        conteudo = respuesta.choices[0].message.content
+        conteudo = resposta.choices[0].message.content  # ✨ Corrigido de 'respuesta' para 'resposta'
         mensagens_api.append({"role": "assistant", "content": conteudo})
         fluxo_execucao.append({"type": "jarvis", "content": conteudo})
-        resposta_final_texto = conteudo
+        resposta_final_texto = conteudo 
 
         json_tool = tentar_json(conteudo)
         if not json_tool or "tool" not in json_tool:
@@ -136,52 +128,52 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
         
     return resposta_final_texto, fluxo_execucao
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat_web():
-    """Rota original para a sua interface HTML de testes locais"""
     dados = request.json
     pergunta_atual = dados.get("mensagem")
     historico_front = dados.get("historico", [])
-    
     historico_adaptado = [{"type": m["type"], "text": m["text"]} for m in historico_front]
     
     _, fluxo = processar_cerebro_jarvis(pergunta_atual, historico_adaptado)
-    return jsonify({"fluxo": flujo})
-
+    return jsonify({"fluxo": fluxo})
 
 @app.route('/webhook', methods=['POST'])
-async def telegram_webhook():
-    """Recebe as mensagens do Telegram em tempo real e responde usando a Groq"""
+def telegram_webhook():  # ✨ Alterado de 'async def' para 'def' síncrono nativo do Flask
+    if not tg_app:
+        return 'Telegram Bot não configurado nas variáveis de ambiente.', 500
     try:
         dados_update = request.get_json(force=True)
-
+        # Cria um event loop local rápido apenas para despachar as requisições da biblioteca python-telegram-bot
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
         update = Update.de_json(dados_update, tg_app.bot)
         
         if update.message and update.message.text:
             texto_usuario = update.message.text
             chat_id = update.message.chat_id
             
-            await tg_app.bot.send_chat_action(chat_id=chat_id, action="typing")
-            
+            loop.run_until_complete(tg_app.bot.send_chat_action(chat_id=chat_id, action="typing"))
             resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario)
             
             for etapa in fluxo:
                 if etapa["type"] == "tool":
-                    await tg_app.bot.send_message(chat_id=chat_id, text=f"⚡ `[System]: {etapa['content']}`", parse_mode="Markdown")
+                    loop.run_until_complete(tg_app.bot.send_message(chat_id=chat_id, text=f"⚡ `[System]: {etapa['content']}`", parse_mode="Markdown"))
             
-            if not tentar_json(resposta_texto):
-                await tg_app.bot.send_message(chat_id=chat_id, text=resposta_texto, parse_mode="Markdown")
+            if not tentar_json(resposta_texto): 
+                loop.run_until_complete(tg_app.bot.send_message(chat_id=chat_id, text=resposta_texto, parse_mode="Markdown"))
                 
+        loop.close()
         return 'OK', 200
     except Exception as e:
         print(f"❌ Erro na rota do Webhook: {e}")
         return 'Erro Interno', 500
-
 
 @app.route('/telemetria', methods=['GET'])
 def telemetria():
