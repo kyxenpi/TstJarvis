@@ -145,16 +145,15 @@ def chat_web():
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
     import requests
+    import json
     
     token = os.getenv("TELEGRAM_TOKEN", "")
     if not token:
-        print("❌ Erro: TELEGRAM_TOKEN não configurado na Render.")
+        print("❌ ERRO CRÍTICO: TELEGRAM_TOKEN está VAZIO na Render!")
         return 'Token não configurado', 500
 
     try:
-        # Tenta ler como JSON direto; se falhar, tenta pegar os dados brutos do formulário
         dados_update = request.get_json(silent=True) or json.loads(request.data.decode('utf-8'))
-        
         print(f"📥 WEBHOOK RECEBEU DADOS: {json.dumps(dados_update)}")
         
         if dados_update and "message" in dados_update and "text" in dados_update["message"]:
@@ -165,7 +164,11 @@ def telegram_webhook():
             
             # Status "digitando..."
             url_action = f"https://api.telegram.org/bot{token}/sendChatAction"
-            requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
+            try:
+                res_action = requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
+                print(f"📡 Status 'typing' enviado. Resposta do Telegram: {res_action.status_code} - {res_action.text}")
+            except Exception as e_action:
+                print(f"❌ Falha ao enviar status 'typing': {e_action}")
             
             # Processa a resposta na Groq
             resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario)
@@ -180,7 +183,11 @@ def telegram_webhook():
                         "text": f"⚡ `[System]: {etapa['content']}`",
                         "parse_mode": "Markdown"
                     }
-                    requests.post(url_msg, json=payload_tool, timeout=5)
+                    try:
+                        res_tool = requests.post(url_msg, json=payload_tool, timeout=5)
+                        print(f"📡 Status envio Tool: {res_tool.status_code} - {res_tool.text}")
+                    except Exception as e_tool:
+                        print(f"❌ Erro ao enviar mensagem de Tool: {e_tool}")
             
             # Envia a resposta final para o usuário
             if not tentar_json(resposta_texto): 
@@ -189,11 +196,15 @@ def telegram_webhook():
                     "text": resposta_texto,
                     "parse_mode": "Markdown"
                 }
-                requests.post(url_msg, json=payload_final, timeout=5)
+                try:
+                    res_final = requests.post(url_msg, json=payload_final, timeout=5)
+                    print(f"📡 Status envio Resposta Final: {res_final.status_code} - {res_final.text}")
+                except Exception as e_final:
+                    print(f"❌ Erro ao enviar Resposta Final: {e_final}")
                 
         return 'OK', 200
     except Exception as e:
-        print(f"❌ Erro bruto no Webhook: {e}")
+        print(f"❌ Erro bruto no processamento do Webhook: {e}")
         return 'Erro Interno', 500
 
 @app.route('/telemetria', methods=['GET'])
