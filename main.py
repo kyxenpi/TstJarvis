@@ -144,34 +144,35 @@ def chat_web():
 
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
-    import requests  # Garante que o requests está disponível escopo
+    import requests
     
-    # Pega o token direto do ambiente de forma segura
     token = os.getenv("TELEGRAM_TOKEN", "")
     if not token:
         print("❌ Erro: TELEGRAM_TOKEN não configurado na Render.")
         return 'Token não configurado', 500
 
     try:
-        dados_update = request.get_json(force=True)
-        print(f"📥 WEBHOOK RECEBEU ALGO: {json.dumps(dados_update)}") # Força o log a se mexer
+        # Tenta ler como JSON direto; se falhar, tenta pegar os dados brutos do formulário
+        dados_update = request.get_json(silent=True) or json.loads(request.data.decode('utf-8'))
         
-        # Verifica se o JSON vindo do Telegram contém uma mensagem de texto
-        if "message" in dados_update and "text" in dados_update["message"]:
+        print(f"📥 WEBHOOK RECEBEU DADOS: {json.dumps(dados_update)}")
+        
+        if dados_update and "message" in dados_update and "text" in dados_update["message"]:
             chat_id = dados_update["message"]["chat"]["id"]
             texto_usuario = dados_update["message"]["text"]
             
-            print(f"📩 Mensagem: '{texto_usuario}' do Chat ID: {chat_id}")
+            print(f"📩 Mensagem recebida: '{texto_usuario}' do Chat ID: {chat_id}")
             
-            # Força o status "digitando..." via API HTTP pura do Telegram
+            # Status "digitando..."
             url_action = f"https://api.telegram.org/bot{token}/sendChatAction"
             requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
             
-            # Processa o cérebro com a Groq
+            # Processa a resposta na Groq
             resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario)
             
-            # Envia logs de ferramentas se o Jarvis executou alguma interna
             url_msg = f"https://api.telegram.org/bot{token}/sendMessage"
+            
+            # Envia o fluxo de ferramentas se houver
             for etapa in fluxo:
                 if etapa["type"] == "tool":
                     payload_tool = {
@@ -181,7 +182,7 @@ def telegram_webhook():
                     }
                     requests.post(url_msg, json=payload_tool, timeout=5)
             
-            # Envia a resposta final do Jarvis para o usuário no Telegram
+            # Envia a resposta final para o usuário
             if not tentar_json(resposta_texto): 
                 payload_final = {
                     "chat_id": chat_id,
