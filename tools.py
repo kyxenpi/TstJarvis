@@ -2,9 +2,8 @@ import subprocess
 import webbrowser
 import os
 import datetime
-import os
+import json
 from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -124,7 +123,7 @@ def system_terminal_command(args):
     else:
         comando_tipo = args
 
-    # 🩻 TRATAMENTO ANTI-LOOP: Se a IA insistir em mandar o comando cru por erro de contexto
+    # 🩻 TRATAMENTO ANTI-LOOP
     if comando_tipo and any(termo in str(comando_tipo).lower() for termo in ["yay -sc", "pacman -sc", "cache"]):
         comando_tipo = "limpar_cache"
     elif comando_tipo and any(termo in str(comando_tipo).lower() for termo in ["yay -syu", "pacman -syu", "atualizar"]):
@@ -155,8 +154,55 @@ def system_terminal_command(args):
     except Exception as e:
         return f"Falha na execução do subprocesso: {str(e)}"
 
-# Escopo estrito para poder criar e editar arquivos no seu Drive
+# ==========================================
+# NÚCLEO DE AUTENTICAÇÃO HÍBRIDA (PC / RENDER)
+# ==========================================
+
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+def obter_credenciais_google():
+    """Gerencia a autenticação buscando arquivos locais ou variáveis de ambiente da Render."""
+    creds = None
+    
+    # 1. Tenta carregar o token de sessão existente
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    elif os.getenv("GOOGLE_TOKEN_JSON"):
+        try:
+            token_data = json.loads(os.getenv("GOOGLE_TOKEN_JSON"))
+            creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+        except Exception as e:
+            print(f"❌ Erro ao parsear GOOGLE_TOKEN_JSON da Render: {e}")
+
+    # 2. Se as credenciais não existirem ou forem inválidas, trata a renovação/geração
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            # Fluxo de criação inicial (Requer interação no navegador local)
+            if os.path.exists('credentials.json'):
+                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+            elif os.getenv("GOOGLE_CREDENTIALS_JSON"):
+                try:
+                    creds_data = json.loads(os.getenv("GOOGLE_CREDENTIALS_JSON"))
+                    flow = InstalledAppFlow.from_client_config(creds_data, SCOPES)
+                    creds = flow.run_local_server(port=0)
+                except Exception as e:
+                    raise Exception(f"Erro ao inicializar fluxo pelas variáveis da Render: {e}")
+            else:
+                raise Exception("Erro crítico: Nenhuma credencial do Google Cloud encontrada (física ou ambiente).")
+                
+            # Salva o token localmente apenas se estiver rodando no PC
+            if not os.getenv("GOOGLE_TOKEN_JSON"):
+                with open('token.json', 'w') as token:
+                    token.write(creds.to_json())
+                    
+    return creds
+
+# ==========================================
+# FERRAMENTAS DE INTEGRAÇÃO COM GOOGLE DRIVE
+# ==========================================
 
 def upload_to_drive(args):
     """Envia um arquivo local para a sua conta do Google Drive. 
@@ -173,39 +219,18 @@ def upload_to_drive(args):
     if not os.path.exists(local_path):
         return f"Erro: O arquivo local '{local_path}' não foi encontrado."
 
-    creds = None
-    # O arquivo token.json guarda as credenciais de login do usuário após a primeira ativação
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-        
-    # Se não houver credenciais válidas, faz o login via navegador
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not os.path.exists('credentials.json'):
-                return "Erro: Arquivo 'credentials.json' de autenticação do Google Cloud não encontrado na raiz."
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-
     try:
+        creds = obter_credenciais_google()
         service = build('drive', 'v3', credentials=creds)
         
-        # Define os metadados do arquivo no Drive
         file_metadata = {'name': drive_name}
         media = MediaFileUpload(local_path, resumable=True)
         
-        # Faz o upload
         file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
         return f"Sucesso! Arquivo '{local_path}' enviado ao Google Drive com o ID: {file.get('id')}"
         
     except Exception as e:
         return f"Falha na integração com o Google Drive: {str(e)}"
-
-        
-
 
 def enviar_pasta_para_drive(argumentos):
     """
@@ -216,7 +241,6 @@ def enviar_pasta_para_drive(argumentos):
         caminho_local = None
         nome_pasta_drive = None
 
-        # Tratamento de parâmetros estruturados pela IA
         if isinstance(argumentos, dict):
             if "args" in argumentos and isinstance(argumentos["args"], dict):
                 caminho_local = argumentos["args"].get("caminho_local")
@@ -225,7 +249,6 @@ def enviar_pasta_para_drive(argumentos):
                 caminho_local = argumentos.get("caminho_local")
                 nome_pasta_drive = argumentos.get("nome_pasta_drive")
         elif isinstance(argumentos, str):
-            import json
             try:
                 dados_convertidos = json.loads(argumentos)
                 return enviar_pasta_para_drive(dados_convertidos)
@@ -238,26 +261,10 @@ def enviar_pasta_para_drive(argumentos):
         if not os.path.exists(caminho_local):
             return f"Erro: O caminho local '{caminho_local}' não existe no sistema."
 
-        # 🔐 AUTENTICAÇÃO LOCAL (Resolve o erro 'creds is not defined')
-        creds = None
-        if os.path.exists('token.json'):
-            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-            
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                if not os.path.exists('credentials.json'):
-                    return "Erro: Arquivo 'credentials.json' do Google Cloud não encontrado na raiz."
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-                creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(creds.to_json())
-
-        # Conecta ao serviço do Drive usando as credenciais validadas
+        creds = obter_credenciais_google()
         service = build('drive', 'v3', credentials=creds)
         
-        # 1. Verificar se a pasta já existe no Drive para evitar duplicadas
+        # 1. Verificar se a pasta já existe no Drive
         query = f"name = '{nome_pasta_drive}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
         resultados = service.files().list(q=query, fields="files(id)").execute()
         pastas = resultados.get('files', [])
@@ -266,7 +273,6 @@ def enviar_pasta_para_drive(argumentos):
             folder_id = pastas[0]['id']
             log_retorno = f"Pasta '{nome_pasta_drive}' já localizada no Drive (ID: {folder_id}).\n"
         else:
-            # Criar a pasta do zero se não existir
             metadata_pasta = {
                 'name': nome_pasta_drive,
                 'mimeType': 'application/vnd.google-apps.folder'
@@ -275,7 +281,7 @@ def enviar_pasta_para_drive(argumentos):
             folder_id = pasta_criada.get('id')
             log_retorno = f"Pasta '{nome_pasta_drive}' criada com sucesso (ID: {folder_id}).\n"
             
-        # 2. Varrer a pasta local e fazer o upload dos arquivos
+        # 2. Upload dos arquivos
         arquivos_enviados = 0
         for item in os.listdir(caminho_local):
             caminho_completo = os.path.join(caminho_local, item)
