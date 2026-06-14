@@ -14,5 +14,5 @@ COPY . .
 
 EXPOSE 5000
 
-# Comando que liga o Flask em modo ASGI/Async usando Gunicorn + Uvicorn
-CMD ["gunicorn", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:5000", "wsgi:app"]
+# Altere a última linha do seu Dockerfile para ficar exatamente assim:
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
