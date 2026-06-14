@@ -210,12 +210,21 @@ def upload_to_drive(args):
     OBRIGATÓRIO passar um objeto com as chaves 'local_path' e 'drive_name'.
     Formato: {"tool": "upload_to_drive", "args": {"local_path": "agenda_jarvis.txt", "drive_name": "Agenda Jarvis.txt"}}
     """
-    if not isinstance(args, dict):
-        return "Erro: Argumentos inválidos. Passe um objeto com 'local_path' e 'drive_name'."
+    local_path = None
+    drive_name = None
+
+    # Trata se a IA mandar como dicionário estruturado (comportamento padrão correto)
+    if isinstance(args, dict):
+        local_path = args.get("local_path")
+        drive_name = args.get("drive_name")
+    # Trata o erro se a IA enviar apenas uma string pura com o nome do arquivo
+    elif isinstance(args, str):
+        local_path = args
+        drive_name = os.path.basename(args) # Usa o próprio nome do arquivo original
+
+    if not local_path or not drive_name:
+        return "Erro: Argumentos inválidos. Passe um objeto com 'local_path' e 'drive_name' ou o caminho do arquivo como texto."
         
-    local_path = args.get("local_path")
-    drive_name = args.get("drive_name")
-    
     if not os.path.exists(local_path):
         return f"Erro: O arquivo local '{local_path}' não foi encontrado."
 
