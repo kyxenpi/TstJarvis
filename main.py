@@ -143,36 +143,56 @@ def chat_web():
     return jsonify({"fluxo": fluxo})
 
 @app.route('/webhook', methods=['POST'])
-def telegram_webhook():  # ✨ Alterado de 'async def' para 'def' síncrono nativo do Flask
-    if not tg_app:
-        return 'Telegram Bot não configurado nas variáveis de ambiente.', 500
+def telegram_webhook():
+    import requests  # Garante que o requests está disponível escopo
+    
+    # Pega o token direto do ambiente de forma segura
+    token = os.getenv("TELEGRAM_TOKEN", "")
+    if not token:
+        print("❌ Erro: TELEGRAM_TOKEN não configurado na Render.")
+        return 'Token não configurado', 500
+
     try:
         dados_update = request.get_json(force=True)
-        # Cria um event loop local rápido apenas para despachar as requisições da biblioteca python-telegram-bot
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        print(f"📥 WEBHOOK RECEBEU ALGO: {json.dumps(dados_update)}") # Força o log a se mexer
         
-        update = Update.de_json(dados_update, tg_app.bot)
-        
-        if update.message and update.message.text:
-            texto_usuario = update.message.text
-            chat_id = update.message.chat_id
+        # Verifica se o JSON vindo do Telegram contém uma mensagem de texto
+        if "message" in dados_update and "text" in dados_update["message"]:
+            chat_id = dados_update["message"]["chat"]["id"]
+            texto_usuario = dados_update["message"]["text"]
             
-            loop.run_until_complete(tg_app.bot.send_chat_action(chat_id=chat_id, action="typing"))
+            print(f"📩 Mensagem: '{texto_usuario}' do Chat ID: {chat_id}")
+            
+            # Força o status "digitando..." via API HTTP pura do Telegram
+            url_action = f"https://api.telegram.org/bot{token}/sendChatAction"
+            requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
+            
+            # Processa o cérebro com a Groq
             resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario)
             
+            # Envia logs de ferramentas se o Jarvis executou alguma interna
+            url_msg = f"https://api.telegram.org/bot{token}/sendMessage"
             for etapa in fluxo:
                 if etapa["type"] == "tool":
-                    loop.run_until_complete(tg_app.bot.send_message(chat_id=chat_id, text=f"⚡ `[System]: {etapa['content']}`", parse_mode="Markdown"))
+                    payload_tool = {
+                        "chat_id": chat_id,
+                        "text": f"⚡ `[System]: {etapa['content']}`",
+                        "parse_mode": "Markdown"
+                    }
+                    requests.post(url_msg, json=payload_tool, timeout=5)
             
+            # Envia a resposta final do Jarvis para o usuário no Telegram
             if not tentar_json(resposta_texto): 
-                loop.run_until_complete(tg_app.bot.send_message(chat_id=chat_id, text=resposta_texto, parse_mode="Markdown"))
+                payload_final = {
+                    "chat_id": chat_id,
+                    "text": resposta_texto,
+                    "parse_mode": "Markdown"
+                }
+                requests.post(url_msg, json=payload_final, timeout=5)
                 
-        loop.close()
         return 'OK', 200
     except Exception as e:
-        print(f"❌ Erro na rota do Webhook: {e}")
+        print(f"❌ Erro bruto no Webhook: {e}")
         return 'Erro Interno', 500
 
 @app.route('/telemetria', methods=['GET'])
