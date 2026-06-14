@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jarvis OS</title>
+    <title>Koda OS</title>
     <link
       id="dynamic-favicon"
       rel="shortcut icon"
@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-      /* Scrollbars ultra sutis padrão Grok */
+      /* Scrollbars ultra sutis padrão */
       ::-webkit-scrollbar {
         width: 4px;
         height: 4px;
@@ -30,7 +30,7 @@
         background: #333333;
       }
 
-      /* Estilização do Markdown renderizado (Padrão Grok) */
+      /* Estilização do Markdown renderizado */
       .markdown-content p {
         margin-bottom: 0.75rem;
       }
@@ -172,7 +172,7 @@
             <i data-lucide="menu" class="w-4 h-4"></i>
           </button>
           <span class="text-sm font-medium tracking-tight text-white"
-            >Jarvis</span
+            >Koda</span
           >
           <span
             class="text-[10px] bg-[#1a1a1a] text-[#a3a3a3] px-1.5 py-0.5 rounded font-mono border border-[#2b2b2b]"
@@ -183,7 +183,7 @@
           class="flex items-center gap-4 text-[11px] font-mono text-[#737373]"
         >
           <span class="flex items-center gap-1.5"
-            ><i data-lucide="cpu" class="w-3.5 h-3.5"></i> llama-3.1</span
+            ><i data-lucide="cpu" class="w-3.5 h-3.5"></i> llama-3.3</span
           >
           <span class="text-[#262626]">|</span>
           <span class="flex items-center gap-1.5 text-[#a3a3a3]"
@@ -221,7 +221,7 @@
             <div class="flex items-center w-full">
               <textarea
                 id="user-input"
-                placeholder="Pergunte qualquer coisa ou envie um comando..."
+                placeholder="Manda a boa ou envia um comando..."
                 rows="1"
                 class="w-full bg-transparent text-[14px] text-white placeholder-[#525252] pr-2 py-2.5 focus:outline-none resize-none overflow-hidden"
                 onkeypress="checkEnter(event)"
@@ -266,8 +266,8 @@
       const historyList = document.getElementById("history-list");
       const sidebar = document.getElementById("sidebar");
 
-      let conversas = JSON.parse(localStorage.getItem("jarvis_chats")) || {};
-      let chatIdAtual = localStorage.getItem("jarvis_current_chat_id") || null;
+      let conversas = JSON.parse(localStorage.getItem("koda_chats")) || {};
+      let chatIdAtual = localStorage.getItem("koda_current_chat_id") || null;
       let textoMensagemFixada = null;
       let responderComVozModoAtivo = false;
 
@@ -296,16 +296,16 @@
         } else {
           novoChat();
         }
-        resetarTimerInatividadeJarvis();
+        resetarTimerInatividadeKoda();
       }
 
       // Gerenciador de suspensão por inatividade
-      function resetarTimerInatividadeJarvis() {
+      function resetarTimerInatividadeKoda() {
         clearTimeout(wakeWordTimeout);
         if (wakeWordAtiva) {
           wakeWordTimeout = setTimeout(() => {
             console.log(
-              "💤 [Jarvis OS] Modo de escuta suspenso por inatividade.",
+              "💤 [Koda OS] Modo de escuta suspenso por inatividade.",
             );
             desativarEscutaCompleta();
           }, TEMPO_INATIVIDADE_WAKE);
@@ -331,7 +331,7 @@
         sidebar.classList.toggle("-translate-x-full");
       }
 
-      function formatarRespostaJarvis(text) {
+      function formatarRespostaKoda(text) {
         const textoLimpo = text.trim();
         if (textoLimpo.startsWith("{") && textoLimpo.endsWith("}")) {
           return `<div class="opacity-40 flex items-center gap-2 font-mono text-xs text-[#525252]"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Executando chamada interna da ferramenta...</div>`;
@@ -382,7 +382,7 @@
           .replace(/"/g, "&quot;");
 
         const botaoPin =
-          type === "user" || (type === "jarvis" && !text.trim().startsWith("{"))
+          type === "user" || (type === "koda" && !text.trim().startsWith("{"))
             ? `<button onclick="alternarPin('${textoEscapadoProBotao}', this)" class="pin-btn opacity-0 group-hover:opacity-100 absolute right-0 top-0 text-[#525252] hover:text-emerald-400 transition-all p-1" title="Fixar mensagem como contexto">
                 <i data-lucide="pin" class="w-3.5 h-3.5"></i>
                </button>`
@@ -396,12 +396,12 @@
                         <div class="text-[14px] text-[#e3e3e3] leading-relaxed">${escapeHtml(text)}</div>
                     </div>
                     ${botaoPin}`;
-        } else if (type === "jarvis") {
-          const conteudoHtml = formatarRespostaJarvis(text);
+        } else if (type === "koda") {
+          const conteudoHtml = formatarRespostaKoda(text);
           msgDiv.innerHTML = `
                     <div class="w-7 h-7 rounded-full bg-[#1a1a1a] border border-[#262626] flex items-center justify-center text-white shrink-0 mt-0.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-white"></i></div>
                     <div class="space-y-1.5 flex-1 pr-6">
-                        <p class="text-xs font-semibold text-white tracking-wide">Jarvis</p>
+                        <p class="text-xs font-semibold text-white tracking-wide">Koda</p>
                         <div class="text-[14px] text-[#c2c2c2] leading-relaxed markdown-content">${conteudoHtml}</div>
                     </div>
                     ${botaoPin}`;
@@ -437,30 +437,30 @@
               text.length > 28 ? text.substring(0, 25) + "..." : text;
             renderizarListaHistorico();
           }
-          localStorage.setItem("jarvis_chats", JSON.stringify(conversas));
+          localStorage.setItem("koda_chats", JSON.stringify(conversas));
         }
       }
 
       function novoChat() {
         chatIdAtual = "chat_" + Date.now();
         conversas[chatIdAtual] = { titulo: "Nova conversa", mensagens: [] };
-        localStorage.setItem("jarvis_current_chat_id", chatIdAtual);
-        localStorage.setItem("jarvis_chats", JSON.stringify(conversas));
+        localStorage.setItem("koda_current_chat_id", chatIdAtual);
+        localStorage.setItem("koda_chats", JSON.stringify(conversas));
 
         textoMensagemFixada = null;
         removerAlertaFixadoVisual();
         chatContainer.innerHTML = "";
         renderizarListaHistorico();
         appendMessage(
-          "Sistemas locais conectados. Como posso ajudar você hoje?",
-          "jarvis",
+          "Sistemas conectados. Qual é a boa de hoje?",
+          "koda",
           true,
         );
       }
 
       function carregarConversa(id) {
         chatIdAtual = id;
-        localStorage.setItem("jarvis_current_chat_id", id);
+        localStorage.setItem("koda_current_chat_id", id);
         chatContainer.innerHTML = "";
         textoMensagemFixada = null;
         removerAlertaFixadoVisual();
@@ -475,10 +475,10 @@
       function deletarConversa(id, event) {
         event.stopPropagation();
         delete conversas[id];
-        localStorage.setItem("jarvis_chats", JSON.stringify(conversas));
+        localStorage.setItem("koda_chats", JSON.stringify(conversas));
         if (chatIdAtual === id) {
           chatIdAtual = null;
-          localStorage.removeItem("jarvis_current_chat_id");
+          localStorage.removeItem("koda_current_chat_id");
           novoChat();
         } else {
           renderizarListaHistorico();
@@ -548,14 +548,13 @@
         const micBtn = document.getElementById("mic-btn");
         const micIcon = document.getElementById("mic-icon");
 
-        // Se a Wake Word estava suspensa, reativa ela ao interagir manualmente
         if (!wakeWordAtiva) {
           wakeWordAtiva = true;
           console.log(
-            "⚡ [Jarvis OS] Escuta reativada manualmente pelo usuário.",
+            "⚡ [Koda OS] Escuta reativada manualmente pelo usuário.",
           );
         }
-        resetarTimerInatividadeJarvis();
+        resetarTimerInatividadeKoda();
 
         if (!gravando) {
           try {
@@ -653,7 +652,7 @@
         const texto = userInput.value.trim();
         if (!texto) return;
 
-        resetarTimerInatividadeJarvis();
+        resetarTimerInatividadeKoda();
 
         if (document.activeElement === userInput || !responderComVozModoAtivo) {
           if (document.activeElement === userInput) {
@@ -689,14 +688,14 @@
           }
 
           dados.fluxo.forEach((item) => {
-            if (item.type === "jarvis") {
-              appendMessage(item.content, "jarvis");
+            if (item.type === "jarvis" || item.type === "koda") {
+              appendMessage(item.content, "koda");
             } else if (item.type === "tool") {
               appendMessage(item.content, "tool");
             }
           });
         } catch (erro) {
-          appendMessage("Erro de conexão com o terminal local.", "jarvis");
+          appendMessage("Erro de conexão com o terminal local.", "koda");
         }
       }
 
@@ -715,7 +714,7 @@
         falar.pitch = 0.85;
 
         const vozes = window.speechSynthesis.getVoices();
-        let vozJarvis =
+        let vozKoda =
           vozes.find(
             (v) => v.lang.includes("pt-BR") && v.name.includes("Daniel"),
           ) ||
@@ -728,7 +727,7 @@
           ) ||
           vozes.find((v) => v.lang.includes("pt-BR"));
 
-        if (vozJarvis) falar.voice = vozJarvis;
+        if (vozKoda) falar.voice = vozKoda;
         window.speechSynthesis.speak(falar);
       }
 
@@ -736,7 +735,7 @@
         window.speechSynthesis.getVoices();
 
       function ativarModoFoco(minutos) {
-        let segundosRestantes = minutes * 60;
+        let segundosRestantes = minutos * 60;
         document.getElementById("sidebar").classList.add("hidden");
         document.querySelector("header").classList.add("opacity-10");
         chatContainer.innerHTML = `<div class="flex flex-col items-center justify-center flex-1 space-y-4 my-auto animate-fade-in">
@@ -755,7 +754,7 @@
             clearInterval(cronometroFoco);
             desativarModoFoco();
             falarTexto(
-              "Modo de foco concluído. Excelente trabalho, senhor. Faça uma pausa.",
+              "Modo de foco concluído. Excelente trabalho. Faça uma pausa.",
             );
           }
           segundosRestantes--;
@@ -790,7 +789,7 @@
                 .toLowerCase();
               console.log("🎙️ [Escuta Ativa]:", textoOuvido);
 
-              if (textoOuvido.includes("jarvis") && !gravando) {
+              if (textoOuvido.includes("koda") && !gravando) {
                 console.log(
                   "⚡ Palavra-chave detectada! Iniciando gravação...",
                 );
