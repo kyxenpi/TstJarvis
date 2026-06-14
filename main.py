@@ -9,12 +9,15 @@ from groq import Groq
 from telegram import Update
 from telegram.ext import Application
 
-# ⚠️ Importações do seu ecossistema original
 from tool_registry import TOOLS 
 
-# Configuração de chaves e ambiente
-# No topo do seu main.py, garanta que está assim:
-os.environ["GROQ_API_KEY"] = os.getenv("API_KEY", API_KEY)
+os.environ["GROQ_API_KEY"] = os.getenv("API_KEY", "")
+
+try:
+    client = Groq()
+except Exception as e:
+    print(f"❌ Erro ao iniciar Groq: {e}")
+    sys.exit(1)
 try:
     client = Groq()
 except Exception as e:
@@ -23,15 +26,13 @@ except Exception as e:
 
 app = Flask(__name__)
 
-# Configurações do Telegram (Defina a sua variável de ambiente ou coloque a string direto aqui)
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "SEU_TOKEN_DO_TELEGRAM_AQUI")
-# Inicializa o objeto do Telegram sem iniciar o Polling (Modo Webhook)
+
 tg_app = Application.builder().token(TELEGRAM_TOKEN).build()
 
 MODELO_PRIMARIO = "llama-3.3-70b-versatile"
 MODELO_SECUNDARIO = "llama-3.1-8b-instant"
 
-# Montagem dinâmica do prompt do sistema com suas ferramentas locais
 lista_ferramentas_texto = ""
 for nome_tool, funcao in TOOLS.items():
     descricao = funcao.__doc__.split('\n')[0].strip() if funcao.__doc__ else "Sem descrição disponível."
@@ -58,7 +59,6 @@ Ferramentas disponíveis no sistema atualmente:
 {lista_ferramentas_texto}"""
 
 
-# --- FUNÇÕES DE AUXÍLIO ORIGINAIS DO SEU AGENTE ---
 
 def tentar_json(texto):
     try:
@@ -76,7 +76,6 @@ def executar_tool(tool_name, args):
         return f"Erro ao executar ferramenta: {e}"
 
 
-# --- MOTOR DE INTELIGÊNCIA UNIFICADO (Usa o loop de ferramentas do seu Jarvis) ---
 
 def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
     """
@@ -85,7 +84,6 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
     """
     mensagens_api = [{"role": "system", "content": SYSTEM_PROMPT}]
     
-    # Restringe histórico para economizar contexto
     if historico_previo:
         historico_limitado = historico_previo[-10:]
         for msg in historico_limitado:
@@ -119,9 +117,8 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
         conteudo = respuesta.choices[0].message.content
         mensagens_api.append({"role": "assistant", "content": conteudo})
         fluxo_execucao.append({"type": "jarvis", "content": conteudo})
-        resposta_final_texto = conteudo # Salva a última iteração legível
+        resposta_final_texto = conteudo
 
-        # Checa se o Jarvis quer executar alguma ferramenta do seu sistema
         json_tool = tentar_json(conteudo)
         if not json_tool or "tool" not in json_tool:
             break
@@ -140,8 +137,6 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
     return resposta_final_texto, fluxo_execucao
 
 
-# --- ROTAS DA API FLASK ---
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -153,39 +148,33 @@ def chat_web():
     pergunta_atual = dados.get("mensagem")
     historico_front = dados.get("historico", [])
     
-    # Converte o formato do seu front para um padrão interno simples
     historico_adaptado = [{"type": m["type"], "text": m["text"]} for m in historico_front]
     
     _, fluxo = processar_cerebro_jarvis(pergunta_atual, historico_adaptado)
     return jsonify({"fluxo": flujo})
 
 
-# 🚀 NOVA ROTA: WEBHOOK DO TELEGRAM 
 @app.route('/webhook', methods=['POST'])
 async def telegram_webhook():
     """Recebe as mensagens do Telegram em tempo real e responde usando a Groq"""
     try:
         dados_update = request.get_json(force=True)
-        # Transforma o JSON bruto vindo do Telegram em um objeto Update estruturado
+
         update = Update.de_json(dados_update, tg_app.bot)
         
         if update.message and update.message.text:
             texto_usuario = update.message.text
             chat_id = update.message.chat_id
             
-            # Avisa o usuário que o Jarvis está processando a ferramenta/resposta
             await tg_app.bot.send_chat_action(chat_id=chat_id, action="typing")
             
-            # Roda a inteligência e o loop de ferramentas do seu Jarvis
             resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario)
             
-            # Se o Jarvis executou alguma ferramenta em background, avisa no chat para você saber
             for etapa in fluxo:
                 if etapa["type"] == "tool":
                     await tg_app.bot.send_message(chat_id=chat_id, text=f"⚡ `[System]: {etapa['content']}`", parse_mode="Markdown")
             
-            # Envia a mensagem final tratada para o seu celular
-            if not tentar_json(resposta_texto): # Evita enviar o JSON puro cru se for a última ação
+            if not tentar_json(resposta_texto):
                 await tg_app.bot.send_message(chat_id=chat_id, text=resposta_texto, parse_mode="Markdown")
                 
         return 'OK', 200
@@ -225,5 +214,4 @@ def transcrever_audio():
         return jsonify({"erro": f"Erro ao processar áudio: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    # Roda o servidor local na porta 5000
     app.run(debug=True, port=5000)
