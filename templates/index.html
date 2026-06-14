@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full bg-[#060606]">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jarvis OS</title>
+    <link
+      id="dynamic-favicon"
+      rel="shortcut icon"
+      href="/static/logo.png"
+      type="image/png"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      /* Scrollbars ultra sutis padrão Grok */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #060606;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #222222;
+        border-radius: 2px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #333333;
+      }
+
+      /* Estilização do Markdown renderizado (Padrão Grok) */
+      .markdown-content p {
+        margin-bottom: 0.75rem;
+      }
+      .markdown-content p:last-child {
+        margin-bottom: 0;
+      }
+      .markdown-content strong {
+        color: #ffffff;
+        font-weight: 600;
+      }
+      .markdown-content ul,
+      .markdown-content ol {
+        margin-bottom: 0.75rem;
+        padding-left: 1.25rem;
+      }
+      .markdown-content ul {
+        list-style-type: disc;
+      }
+      .markdown-content ol {
+        list-style-type: decimal;
+      }
+      .markdown-content li {
+        margin-bottom: 0.25rem;
+      }
+      .markdown-content pre {
+        background-color: #0d0d0d;
+        border: 1px solid #1f1f1f;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 0.75rem 0;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 0.875rem;
+      }
+      .markdown-content code {
+        font-family: monospace;
+        background-color: #1a1a1a;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-size: 0.85em;
+        color: #ef4444;
+      }
+      .markdown-content pre code {
+        background-color: transparent;
+        padding: 0;
+        color: #e3e3e3;
+      }
+    </style>
+  </head>
+  <body
+    class="h-full text-[#e3e3e3] font-sans flex antialiased overflow-hidden"
+  >
+    <aside
+      id="sidebar"
+      class="w-64 h-full bg-[#060606] border-r border-[#1f1f1f] flex flex-col justify-between shrink-0 transition-all duration-300 md:translate-x-0 -translate-x-full fixed md:static z-40"
+    >
+      <div class="p-3.5 space-y-4 flex flex-col h-full overflow-hidden">
+        <button
+          onclick="novoChat()"
+          class="w-full flex items-center justify-between border border-[#1f1f1f] hover:bg-[#0d0d0d] rounded-xl px-4 py-2.5 text-xs text-white transition-colors font-medium"
+        >
+          <span class="flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Nova conversa
+          </span>
+          <kbd
+            class="text-[10px] text-[#525252] font-mono border border-[#1f1f1f] px-1 rounded"
+            >Ctrl + N</kbd
+          >
+        </button>
+
+        <!-- 📊 Painel de Hardware na Sidebar -->
+        <div
+          class="px-3.5 py-2 bg-[#090909] border border-[#1f1f1f] rounded-xl font-mono text-[11px] text-[#a3a3a3] space-y-1.5 mx-3.5 mb-2"
+        >
+          <div
+            class="flex justify-between items-center text-[10px] uppercase font-bold text-[#525252] tracking-wider mb-1"
+          >
+            <span>Hardware Status</span>
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+          </div>
+          <div class="flex justify-between">
+            <span>CPU:</span><span id="hw-cpu" class="text-white">0%</span>
+          </div>
+          <div class="flex justify-between">
+            <span>RAM:</span><span id="hw-ram" class="text-white">0%</span>
+          </div>
+        </div>
+
+        <script>
+          // Função para atualizar os dados de hardware a cada 3 segundos
+          async function atualizarHardware() {
+            try {
+              const response = await fetch("/telemetria");
+              const dados = await response.json();
+              if (!dados.erro) {
+                document.getElementById("hw-cpu").innerText = dados.cpu + "%";
+                document.getElementById("hw-ram").innerText = dados.ram + "%";
+              }
+            } catch (e) {
+              console.log("Erro ao ler telemetria");
+            }
+          }
+          setInterval(atualizarHardware, 3000);
+        </script>
+
+        <div class="flex-1 overflow-y-auto space-y-1 pr-1">
+          <p
+            class="text-[10px] font-semibold text-[#525252] px-2 uppercase tracking-wider mb-2"
+          >
+            Recentes
+          </p>
+          <div id="history-list" class="space-y-0.5"></div>
+        </div>
+      </div>
+
+      <div
+        class="p-4 border-t border-[#1f1f1f] text-[11px] text-[#525252] font-mono flex justify-between items-center bg-[#060606]"
+      >
+        <span>Histórico Salvo</span>
+        <button
+          onclick="limparTodoHistorico()"
+          class="hover:text-red-400 transition-colors"
+          title="Limpar tudo"
+        >
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#060606]">
+      <header
+        class="border-b border-[#1f1f1f] bg-[#060606] px-6 py-3 flex items-center justify-between sticky top-0 z-30"
+      >
+        <div class="flex items-center gap-3">
+          <button
+            onclick="toggleSidebar()"
+            class="md:hidden p-1.5 hover:bg-[#1a1a1a] rounded-lg text-[#a3a3a3]"
+          >
+            <i data-lucide="menu" class="w-4 h-4"></i>
+          </button>
+          <span class="text-sm font-medium tracking-tight text-white"
+            >Jarvis</span
+          >
+          <span
+            class="text-[10px] bg-[#1a1a1a] text-[#a3a3a3] px-1.5 py-0.5 rounded font-mono border border-[#2b2b2b]"
+            >v2.0</span
+          >
+        </div>
+        <div
+          class="flex items-center gap-4 text-[11px] font-mono text-[#737373]"
+        >
+          <span class="flex items-center gap-1.5"
+            ><i data-lucide="cpu" class="w-3.5 h-3.5"></i> llama-3.1</span
+          >
+          <span class="text-[#262626]">|</span>
+          <span class="flex items-center gap-1.5 text-[#a3a3a3]"
+            ><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            local-agent</span
+          >
+        </div>
+      </header>
+
+      <main
+        id="chat-container"
+        class="flex-1 overflow-y-auto px-4 py-8 space-y-8 max-w-3xl w-full mx-auto flex flex-col"
+      ></main>
+
+      <footer class="p-4 bg-[#060606] border-t border-[#1f1f1f] relative">
+        <div class="max-w-3xl w-full mx-auto relative">
+          <div
+            class="absolute -top-7 right-2 flex items-center gap-1.5 text-[10px] font-mono text-[#525252]"
+          >
+            <span
+              class="w-1.5 h-1.5 rounded-full bg-emerald-500/70 animate-pulse"
+            ></span>
+            <span
+              >Uso da Sessão:
+              <strong id="token-counter" class="text-[#a3a3a3] font-medium"
+                >0</strong
+              >
+              tokens</span
+            >
+          </div>
+
+          <div
+            class="relative flex flex-col bg-[#0d0d0d] border border-[#1f1f1f] rounded-xl focus-within:border-[#3a3a3a] transition-colors p-2 pl-4"
+          >
+            <div class="flex items-center w-full">
+              <textarea
+                id="user-input"
+                placeholder="Pergunte qualquer coisa ou envie um comando..."
+                rows="1"
+                class="w-full bg-transparent text-[14px] text-white placeholder-[#525252] pr-2 py-2.5 focus:outline-none resize-none overflow-hidden"
+                onkeypress="checkEnter(event)"
+                oninput="autoGrow(this)"
+              ></textarea>
+
+              <button
+                id="mic-btn"
+                onclick="alternarGravacao()"
+                class="p-2.5 text-[#525252] hover:text-red-400 transition-colors mr-2 rounded-lg hover:bg-[#161616]"
+                title="Gravar comando de voz"
+              >
+                <i data-lucide="mic" id="mic-icon" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <div
+              class="flex items-center justify-between pt-1 pr-1 border-t border-[#161616] mt-1"
+            >
+              <span class="text-[10px] text-[#525252] font-mono"
+                >Pressione Enter para enviar • Shift + Enter para pular
+                linha</span
+              >
+              <button
+                onclick="enviarMensagem()"
+                class="p-2 bg-white hover:bg-[#e3e3e3] text-black rounded-lg transition-all flex items-center justify-center disabled:opacity-30"
+                id="send-btn"
+              >
+                <i data-lucide="arrow-up" class="w-4 h-4 stroke-[2.5]"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      marked.setOptions({ breaks: true, gfm: true });
+
+      const chatContainer = document.getElementById("chat-container");
+      const userInput = document.getElementById("user-input");
+      const historyList = document.getElementById("history-list");
+      const sidebar = document.getElementById("sidebar");
+
+      let conversas = JSON.parse(localStorage.getItem("jarvis_chats")) || {};
+      let chatIdAtual = localStorage.getItem("jarvis_current_chat_id") || null;
+      let textoMensagemFixada = null;
+      let responderComVozModoAtivo = false;
+
+      // ⏱️ TIMERS E CONFIGURAÇÕES DE SEGURANÇA
+      let mediaRecorder;
+      let audioChunks = [];
+      let gravando = false;
+      let gravacaoTimeout;
+      let wakeWordTimeout;
+      let wakeWordRecognizer;
+      let wakeWordAtiva = true;
+
+      const TEMPO_SILENCIO_GRAVACAO = 5000; // 5 segundos
+      const TEMPO_INATIVIDADE_WAKE = 180000; // 3 minutos
+
+      function init() {
+        const linkFavicon = document.getElementById("dynamic-favicon");
+        if (linkFavicon) {
+          linkFavicon.href =
+            "/static/logo.png?v=" + Math.floor(Math.random() * 10000);
+        }
+        lucide.createIcons();
+        renderizarListaHistorico();
+        if (chatIdAtual && conversas[chatIdAtual]) {
+          carregarConversa(chatIdAtual);
+        } else {
+          novoChat();
+        }
+        resetarTimerInatividadeJarvis();
+      }
+
+      // Gerenciador de suspensão por inatividade
+      function resetarTimerInatividadeJarvis() {
+        clearTimeout(wakeWordTimeout);
+        if (wakeWordAtiva) {
+          wakeWordTimeout = setTimeout(() => {
+            console.log(
+              "💤 [Jarvis OS] Modo de escuta suspenso por inatividade.",
+            );
+            desativarEscutaCompleta();
+          }, TEMPO_INATIVIDADE_WAKE);
+        }
+      }
+
+      function desativarEscutaCompleta() {
+        wakeWordAtiva = false;
+        if (wakeWordRecognizer) {
+          wakeWordRecognizer.stop();
+        }
+        const micBtn = document.getElementById("mic-btn");
+        if (micBtn) micBtn.title = "Escuta suspensa. Clique para reativar.";
+      }
+
+      function autoGrow(element) {
+        element.style.height = "auto";
+        element.style.height = element.scrollHeight + "px";
+        if (element.value === "") element.style.height = "42px";
+      }
+
+      function toggleSidebar() {
+        sidebar.classList.toggle("-translate-x-full");
+      }
+
+      function formatarRespostaJarvis(text) {
+        const textoLimpo = text.trim();
+        if (textoLimpo.startsWith("{") && textoLimpo.endsWith("}")) {
+          return `<div class="opacity-40 flex items-center gap-2 font-mono text-xs text-[#525252]"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Executando chamada interna da ferramenta...</div>`;
+        }
+        return marked.parse(text);
+      }
+
+      function alternarPin(texto, elementoBotao) {
+        if (textoMensagemFixada === texto) {
+          textoMensagemFixada = null;
+          document
+            .querySelectorAll(".pin-btn")
+            .forEach((b) => b.classList.remove("text-emerald-400"));
+          removerAlertaFixadoVisual();
+        } else {
+          textoMensagemFixada = texto;
+          document
+            .querySelectorAll(".pin-btn")
+            .forEach((b) => b.classList.remove("text-emerald-400"));
+          elementoBotao.classList.add("text-emerald-400");
+          mostrarAlertaFixadoVisual();
+        }
+      }
+
+      function mostrarAlertaFixadoVisual() {
+        removerAlertaFixadoVisual();
+        const alerta = document.createElement("div");
+        alerta.id = "alerta-fixado";
+        alerta.className =
+          "fixed bottom-28 left-1/2 -translate-x-1/2 bg-[#111111] border border-emerald-950 px-4 py-2 rounded-xl text-xs text-emerald-400 flex items-center gap-2 shadow-2xl font-mono z-50 animate-bounce";
+        alerta.innerHTML = `<i data-lucide="pin" class="w-3.5 h-3.5 fill-emerald-400"></i> Contexto fixado para o próximo prompt`;
+        document.body.appendChild(alerta);
+        lucide.createIcons();
+      }
+
+      function removerAlertaFixadoVisual() {
+        const existente = document.getElementById("alerta-fixado");
+        if (existente) existente.remove();
+      }
+
+      function appendMessage(text, type, salvar = true) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className =
+          "flex items-start gap-4 group animate-fade-in relative";
+
+        const textoEscapadoProBotao = text
+          .replace(/'/g, "\\'")
+          .replace(/"/g, "&quot;");
+
+        const botaoPin =
+          type === "user" || (type === "jarvis" && !text.trim().startsWith("{"))
+            ? `<button onclick="alternarPin('${textoEscapadoProBotao}', this)" class="pin-btn opacity-0 group-hover:opacity-100 absolute right-0 top-0 text-[#525252] hover:text-emerald-400 transition-all p-1" title="Fixar mensagem como contexto">
+                <i data-lucide="pin" class="w-3.5 h-3.5"></i>
+               </button>`
+            : "";
+
+        if (type === "user") {
+          msgDiv.innerHTML = `
+                    <div class="w-7 h-7 rounded-full bg-[#262626] flex items-center justify-center text-white shrink-0 mt-0.5 font-mono text-xs font-bold">U</div>
+                    <div class="space-y-1 flex-1 pr-6">
+                        <p class="text-xs font-semibold text-white tracking-wide">Você</p>
+                        <div class="text-[14px] text-[#e3e3e3] leading-relaxed">${escapeHtml(text)}</div>
+                    </div>
+                    ${botaoPin}`;
+        } else if (type === "jarvis") {
+          const conteudoHtml = formatarRespostaJarvis(text);
+          msgDiv.innerHTML = `
+                    <div class="w-7 h-7 rounded-full bg-[#1a1a1a] border border-[#262626] flex items-center justify-center text-white shrink-0 mt-0.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-white"></i></div>
+                    <div class="space-y-1.5 flex-1 pr-6">
+                        <p class="text-xs font-semibold text-white tracking-wide">Jarvis</p>
+                        <div class="text-[14px] text-[#c2c2c2] leading-relaxed markdown-content">${conteudoHtml}</div>
+                    </div>
+                    ${botaoPin}`;
+
+          if (
+            salvar &&
+            !text.trim().startsWith("{") &&
+            responderComVozModoAtivo
+          ) {
+            falarTexto(text);
+            responderComVozModoAtivo = false;
+          }
+        } else if (type === "tool") {
+          msgDiv.innerHTML = `
+                    <div class="w-7 h-7 rounded-full bg-[#1c1917] border border-[#443730] flex items-center justify-center text-[#fdba74] shrink-0 mt-0.5"><i data-lucide="terminal" class="w-3.5 h-3.5"></i></div>
+                    <div class="space-y-1.5 flex-1 font-mono text-xs">
+                        <p class="text-[#dd6b20] font-bold text-[10px] tracking-wider uppercase">[System Tool Log]</p>
+                        <pre class="p-3 bg-[#0a0a0a] border border-[#1f1a17] text-[#fbd38d]/90 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed">${escapeHtml(text)}</pre>
+                    </div>`;
+        }
+
+        chatContainer.appendChild(msgDiv);
+        lucide.createIcons();
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        if (salvar && chatIdAtual) {
+          conversas[chatIdAtual].mensagens.push({ text, type });
+          if (
+            type === "user" &&
+            conversas[chatIdAtual].titulo === "Nova conversa"
+          ) {
+            conversas[chatIdAtual].titulo =
+              text.length > 28 ? text.substring(0, 25) + "..." : text;
+            renderizarListaHistorico();
+          }
+          localStorage.setItem("jarvis_chats", JSON.stringify(conversas));
+        }
+      }
+
+      function novoChat() {
+        chatIdAtual = "chat_" + Date.now();
+        conversas[chatIdAtual] = { titulo: "Nova conversa", mensagens: [] };
+        localStorage.setItem("jarvis_current_chat_id", chatIdAtual);
+        localStorage.setItem("jarvis_chats", JSON.stringify(conversas));
+
+        textoMensagemFixada = null;
+        removerAlertaFixadoVisual();
+        chatContainer.innerHTML = "";
+        renderizarListaHistorico();
+        appendMessage(
+          "Sistemas locais conectados. Como posso ajudar você hoje?",
+          "jarvis",
+          true,
+        );
+      }
+
+      function carregarConversa(id) {
+        chatIdAtual = id;
+        localStorage.setItem("jarvis_current_chat_id", id);
+        chatContainer.innerHTML = "";
+        textoMensagemFixada = null;
+        removerAlertaFixadoVisual();
+
+        conversas[id].mensagens.forEach((msg) => {
+          appendMessage(msg.text, msg.type, false);
+        });
+        renderizarListaHistorico();
+        if (window.innerWidth < 768) toggleSidebar();
+      }
+
+      function deletarConversa(id, event) {
+        event.stopPropagation();
+        delete conversas[id];
+        localStorage.setItem("jarvis_chats", JSON.stringify(conversas));
+        if (chatIdAtual === id) {
+          chatIdAtual = null;
+          localStorage.removeItem("jarvis_current_chat_id");
+          novoChat();
+        } else {
+          renderizarListaHistorico();
+        }
+      }
+
+      function limparTodoHistorico() {
+        if (
+          confirm(
+            "Deseja apagar permanentemente todo seu histórico de conversas?",
+          )
+        ) {
+          conversas = {};
+          localStorage.clear();
+          novoChat();
+        }
+      }
+
+      function renderizarListaHistorico() {
+        historyList.innerHTML = "";
+        const idsOrdenados = Object.keys(conversas).sort(
+          (a, b) => b.split("_")[1] - a.split("_")[1],
+        );
+
+        idsOrdenados.forEach((id) => {
+          const ativo = id === chatIdAtual;
+          const itemDiv = document.createElement("div");
+          itemDiv.className = `group/item w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${ativo ? "bg-[#1a1a1a] text-white" : "text-[#a3a3a3] hover:bg-[#0d0d0d] hover:text-[#e3e3e3]"}`;
+          itemDiv.setAttribute("onclick", `carregarConversa('${id}')`);
+
+          itemDiv.innerHTML = `
+                    <span class="truncate flex items-center gap-2 max-w-[80%]">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5 shrink-0 opacity-60"></i>
+                        ${escapeHtml(conversas[id].titulo)}
+                    </span>
+                    <button onclick="deletarConversa('${id}', event)" class="opacity-0 group-hover/item:opacity-100 hover:text-red-400 transition-all p-0.5">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+          historyList.appendChild(itemDiv);
+        });
+        lucide.createIcons();
+      }
+
+      function checkEnter(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          enviarMensagem();
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key.toLowerCase() === "n") {
+          e.preventDefault();
+          novoChat();
+        }
+      });
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      async function alternarGravacao() {
+        const micBtn = document.getElementById("mic-btn");
+        const micIcon = document.getElementById("mic-icon");
+
+        // Se a Wake Word estava suspensa, reativa ela ao interagir manualmente
+        if (!wakeWordAtiva) {
+          wakeWordAtiva = true;
+          console.log(
+            "⚡ [Jarvis OS] Escuta reativada manualmente pelo usuário.",
+          );
+        }
+        resetarTimerInatividadeJarvis();
+
+        if (!gravando) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+            });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+              clearTimeout(gravacaoTimeout);
+
+              if (audioChunks.length === 0) {
+                restaurarBotaoMicPadrao();
+                if (wakeWordAtiva) iniciarEscutaWakeWord();
+                return;
+              }
+
+              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+              micBtn.className =
+                "p-2.5 text-amber-400 animate-spin mr-2 rounded-lg";
+              micIcon.setAttribute("data-lucide", "loader-2");
+              lucide.createIcons();
+
+              const formData = new FormData();
+              formData.append("audio", audioBlob, "comando.webm");
+
+              try {
+                const response = await fetch("/transcrever", {
+                  method: "POST",
+                  body: formData,
+                });
+                const resultado = await response.json();
+
+                if (resultado.texto && resultado.texto.trim() !== "") {
+                  responderComVozModoAtivo = true;
+                  userInput.value = resultado.texto;
+                  autoGrow(userInput);
+                  enviarMensagem();
+                }
+              } catch (erro) {
+                console.error("Erro ao transcrever áudio:", erro);
+              }
+
+              restaurarBotaoMicPadrao();
+              if (wakeWordAtiva) iniciarEscutaWakeWord();
+            };
+
+            mediaRecorder.start();
+            gravando = true;
+            micBtn.className =
+              "p-2.5 text-red-500 animate-pulse mr-2 rounded-lg bg-red-950/20";
+
+            // Timeout de Silêncio (5s)
+            gravacaoTimeout = setTimeout(() => {
+              if (gravando) {
+                console.log("⏱️ Silêncio longo detectado. Abortando captura.");
+                audioChunks = [];
+                mediaRecorder.stream
+                  .getTracks()
+                  .forEach((track) => track.stop());
+                mediaRecorder.stop();
+                gravando = false;
+              }
+            }, TEMPO_SILENCIO_GRAVACAO);
+          } catch (err) {
+            alert("Não foi possível acessar o microfone.");
+            console.error(err);
+            if (wakeWordAtiva) iniciarEscutaWakeWord();
+          }
+        } else {
+          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+          mediaRecorder.stop();
+          gravando = false;
+        }
+      }
+
+      function restaurarBotaoMicPadrao() {
+        const micBtn = document.getElementById("mic-btn");
+        const micIcon = document.getElementById("mic-icon");
+        if (micBtn && micIcon) {
+          micBtn.className =
+            "p-2.5 text-[#525252] hover:text-red-400 transition-colors mr-2 rounded-lg hover:bg-[#161616]";
+          micIcon.setAttribute("data-lucide", "mic");
+          lucide.createIcons();
+        }
+      }
+
+      async function enviarMensagem() {
+        const texto = userInput.value.trim();
+        if (!texto) return;
+
+        resetarTimerInatividadeJarvis();
+
+        if (document.activeElement === userInput || !responderComVozModoAtivo) {
+          if (document.activeElement === userInput) {
+            responderComVozModoAtivo = false;
+          }
+        }
+
+        appendMessage(texto, "user");
+        userInput.value = "";
+        userInput.style.height = "auto";
+
+        const historicoEnvio = conversas[chatIdAtual]
+          ? conversas[chatIdAtual].mensagens
+          : [];
+
+        try {
+          const response = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mensagem: texto,
+              historico: historicoEnvio,
+              mensagem_fixada: textoMensagemFixada,
+            }),
+          });
+
+          const dados = await response.json();
+
+          if (dados.tokens_usados) {
+            const elementoContador = document.getElementById("token-counter");
+            let totalAtual = parseInt(elementoContador.innerText) || 0;
+            elementoContador.innerText = totalAtual + dados.tokens_usados;
+          }
+
+          dados.fluxo.forEach((item) => {
+            if (item.type === "jarvis") {
+              appendMessage(item.content, "jarvis");
+            } else if (item.type === "tool") {
+              appendMessage(item.content, "tool");
+            }
+          });
+        } catch (erro) {
+          appendMessage("Erro de conexão com o terminal local.", "jarvis");
+        }
+      }
+
+      function falarTexto(texto) {
+        window.speechSynthesis.cancel();
+        if (texto.trim().startsWith("{")) return;
+
+        let textoLimpo = texto
+          .replace(/\*+/g, "")
+          .replace(/`+/g, "")
+          .replace(/#+/g, "")
+          .replace(/-\s+/g, "");
+        const falar = new SpeechSynthesisUtterance(textoLimpo);
+        falar.lang = "pt-BR";
+        falar.rate = 1.05;
+        falar.pitch = 0.85;
+
+        const vozes = window.speechSynthesis.getVoices();
+        let vozJarvis =
+          vozes.find(
+            (v) => v.lang.includes("pt-BR") && v.name.includes("Daniel"),
+          ) ||
+          vozes.find(
+            (v) =>
+              v.lang.includes("pt-BR") && v.name.toLowerCase().includes("male"),
+          ) ||
+          vozes.find(
+            (v) => v.lang.includes("pt-BR") && v.name.includes("Google"),
+          ) ||
+          vozes.find((v) => v.lang.includes("pt-BR"));
+
+        if (vozJarvis) falar.voice = vozJarvis;
+        window.speechSynthesis.speak(falar);
+      }
+
+      window.speechSynthesis.onvoiceschanged = () =>
+        window.speechSynthesis.getVoices();
+
+      function ativarModoFoco(minutos) {
+        let segundosRestantes = minutes * 60;
+        document.getElementById("sidebar").classList.add("hidden");
+        document.querySelector("header").classList.add("opacity-10");
+        chatContainer.innerHTML = `<div class="flex flex-col items-center justify-center flex-1 space-y-4 my-auto animate-fade-in">
+        <div class="text-6xl font-mono font-bold tracking-widest text-white animate-pulse" id="pomodoro-timer">00:00</div>
+        <p class="text-xs text-[#525252] font-mono tracking-wider uppercase">Modo de Foco Ativo • Concentre-se nos códigos</p>
+        <button onclick="desativarModoFoco()" class="px-4 py-1.5 border border-[#1f1f1f] hover:bg-red-950/20 rounded-lg text-xs text-red-400 transition-colors font-mono">Abortar Foco</button>
+    </div>`;
+
+        cronometroFoco = setInterval(() => {
+          let min = Math.floor(segundosRestantes / 60);
+          let seg = segundosRestantes % 60;
+          document.getElementById("pomodoro-timer").innerText =
+            `${min.toString().padStart(2, "0")}:${seg.toString().padStart(2, "0")}`;
+
+          if (segundosRestantes <= 0) {
+            clearInterval(cronometroFoco);
+            desativarModoFoco();
+            falarTexto(
+              "Modo de foco concluído. Excelente trabalho, senhor. Faça uma pausa.",
+            );
+          }
+          segundosRestantes--;
+        }, 1000);
+      }
+
+      function desativarModoFoco() {
+        clearInterval(cronometroFoco);
+        document.getElementById("sidebar").classList.remove("hidden");
+        document.querySelector("header").classList.remove("opacity-10");
+        novoChat();
+      }
+
+      function iniciarEscutaWakeWord() {
+        if (!("webkitSpeechRecognition" in window)) {
+          console.log("Wake Word não suportada neste navegador.");
+          return;
+        }
+
+        if (!wakeWordAtiva) return;
+
+        wakeWordRecognizer = new webkitSpeechRecognition();
+        wakeWordRecognizer.continuous = true;
+        wakeWordRecognizer.interimResults = false;
+        wakeWordRecognizer.lang = "pt-BR";
+
+        wakeWordRecognizer.onresult = (event) => {
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              let textoOuvido = event.results[i][0].transcript
+                .trim()
+                .toLowerCase();
+              console.log("🎙️ [Escuta Ativa]:", textoOuvido);
+
+              if (textoOuvido.includes("jarvis") && !gravando) {
+                console.log(
+                  "⚡ Palavra-chave detectada! Iniciando gravação...",
+                );
+                wakeWordRecognizer.stop();
+                alternarGravacao();
+              }
+            }
+          }
+        };
+
+        wakeWordRecognizer.onend = () => {
+          if (wakeWordAtiva && !gravando) {
+            wakeWordRecognizer.start();
+          }
+        };
+
+        wakeWordRecognizer.start();
+      }
+
+      window.onload = () => {
+        init();
+        iniciarEscutaWakeWord();
+      };
+    </script>
+  </body>
+</html>
