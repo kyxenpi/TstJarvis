@@ -4,6 +4,7 @@ import json
 import subprocess
 import io
 import psutil
+import requests
 from flask import Flask, render_template, request, jsonify
 from groq import Groq
 from telegram import Update
@@ -32,6 +33,7 @@ tg_app = Application.builder().token(TELEGRAM_TOKEN).build() if TELEGRAM_TOKEN e
 
 MODELO_PRIMARIO = "llama-3.3-70b-versatile"
 MODELO_SECUNDARIO = "llama-3.1-8b-instant"
+MEMORIA_TELEGRAM = {}
 
 # Montagem dinâmica do prompt do sistema com suas ferramentas locais
 lista_ferramentas_texto = ""
@@ -83,6 +85,7 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
                 role = "user" if msg.get("type") == "user" else "assistant"
                 mensagens_api.append({"role": role, "content": msg.get("text", "")})
                 
+    # A última mensagem do usuário (pergunta_usuario) já vai ser incluída dinamicamente pela chamada da API abaixo
     mensagens_api.append({"role": "user", "content": pergunta_usuario})
     
     fluxo_execucao = []
@@ -106,7 +109,7 @@ def processar_cerebro_jarvis(pergunta_usuario, historico_previo=None):
             except Exception as erro_secundario:
                 return "Todos os motores de IA estão offline.", [{"type": "jarvis", "content": "Erro crítico na API Groq."}]
 
-        conteudo = resposta.choices[0].message.content  # ✨ Corrigido de 'respuesta' para 'resposta'
+        conteudo = resposta.choices[0].message.content  
         mensagens_api.append({"role": "assistant", "content": conteudo})
         fluxo_execucao.append({"type": "jarvis", "content": conteudo})
         resposta_final_texto = conteudo 
@@ -144,9 +147,6 @@ def chat_web():
 
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
-    import requests
-    import json
-    
     token = os.getenv("TELEGRAM_TOKEN", "")
     if not token:
         print("❌ ERRO CRÍTICO: TELEGRAM_TOKEN está VAZIO na Render!")
@@ -154,28 +154,43 @@ def telegram_webhook():
 
     try:
         dados_update = request.get_json(silent=True) or json.loads(request.data.decode('utf-8'))
-        print(f"📥 WEBHOOK RECEBEU DADOS: {json.dumps(dados_update)}")
         
         if dados_update and "message" in dados_update and "text" in dados_update["message"]:
             chat_id = dados_update["message"]["chat"]["id"]
             texto_usuario = dados_update["message"]["text"]
             
-            print(f"📩 Mensagem recebida: '{texto_usuario}' do Chat ID: {chat_id}")
+            print(f"📩 Mensagem recebida no Telegram: '{texto_usuario}' do Chat ID: {chat_id}")
             
             # Status "digitando..."
             url_action = f"https://api.telegram.org/bot{token}/sendChatAction"
-            try:
-                res_action = requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
-                print(f"📡 Status 'typing' enviado. Resposta do Telegram: {res_action.status_code} - {res_action.text}")
-            except Exception as e_action:
-                print(f"❌ Falha ao enviar status 'typing': {e_action}")
+            requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
             
-            # Processa a resposta na Groq
-            resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario)
+            # 🧠 GERENCIAMENTO DE MEMÓRIA (Corrigido para evitar amnésia):
+            if chat_id not in MEMORIA_TELEGRAM:
+                MEMORIA_TELEGRAM[chat_id] = []
+                
+            # 1️⃣ ADICIONA IMEDIATAMENTE a entrada atual à memória antes do cérebro rodar
+            MEMORIA_TELEGRAM[chat_id].append({"type": "user", "text": texto_usuario})
             
+            # Mantém apenas as últimas 15 mensagens na memória para controle de limites
+            MEMORIA_TELEGRAM[chat_id] = MEMORIA_TELEGRAM[chat_id][-15:]
+            
+            # Pegamos o histórico que acabou de receber o "Sim" (ou comando atual)
+            # Retiramos o último item na hora de passar para o historico_previo do cérebro, 
+            # pois o método processar_cerebro_jarvis já adiciona o 'pergunta_usuario' manualmente no fim da lista da API.
+            historico_previo = MEMORIA_TELEGRAM[chat_id][:-1]
+            
+            # 2️⃣ EXECUTA O CÉREBRO com o contexto perfeitamente alinhado
+            resposta_texto, fluxo = processar_cerebro_jarvis(texto_usuario, historico_previo)
+            
+            # 3️⃣ ADICIONA A RESPOSTA do Jarvis na memória do sistema
+            MEMORIA_TELEGRAM[chat_id].append({"type": "jarvis", "text": resposta_texto})
+            
+            # Garante que o limite de 15 mensagens se aplica após a inserção da resposta
+            MEMORIA_TELEGRAM[chat_id] = MEMORIA_TELEGRAM[chat_id][-15:]
+            
+            # Envio das mensagens de volta para o Telegram
             url_msg = f"https://api.telegram.org/bot{token}/sendMessage"
-            
-            # Envia o fluxo de ferramentas se houver
             for etapa in fluxo:
                 if etapa["type"] == "tool":
                     payload_tool = {
@@ -183,24 +198,15 @@ def telegram_webhook():
                         "text": f"⚡ `[System]: {etapa['content']}`",
                         "parse_mode": "Markdown"
                     }
-                    try:
-                        res_tool = requests.post(url_msg, json=payload_tool, timeout=5)
-                        print(f"📡 Status envio Tool: {res_tool.status_code} - {res_tool.text}")
-                    except Exception as e_tool:
-                        print(f"❌ Erro ao enviar mensagem de Tool: {e_tool}")
+                    requests.post(url_msg, json=payload_tool, timeout=5)
             
-            # Envia a resposta final para o usuário
             if not tentar_json(resposta_texto): 
                 payload_final = {
                     "chat_id": chat_id,
                     "text": resposta_texto,
                     "parse_mode": "Markdown"
                 }
-                try:
-                    res_final = requests.post(url_msg, json=payload_final, timeout=5)
-                    print(f"📡 Status envio Resposta Final: {res_final.status_code} - {res_final.text}")
-                except Exception as e_final:
-                    print(f"❌ Erro ao enviar Resposta Final: {e_final}")
+                requests.post(url_msg, json=payload_final, timeout=5)
                 
         return 'OK', 200
     except Exception as e:
