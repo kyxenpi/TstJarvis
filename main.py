@@ -183,7 +183,8 @@ def telegram_webhook():
             
             print(f"📩 Mensagem recebida no Telegram: '{texto_usuario}' do Chat ID: {chat_id}")
             
-            url_action = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){token}/sendChatAction"
+            # CORREÇÃO 1: URL limpa para a ação de "digitando"
+            url_action = f"https://api.telegram.org/bot{token}/sendChatAction"
             requests.post(url_action, json={"chat_id": chat_id, "action": "typing"}, timeout=5)
             
             if chat_id not in MEMORIA_TELEGRAM:
@@ -201,7 +202,9 @@ def telegram_webhook():
             
             MEMORIA_TELEGRAM[chat_id] = MEMORIA_TELEGRAM[chat_id][-15:]
             
-            url_msg = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){token}/sendMessage"
+            # CORREÇÃO 2: Base da URL limpa para envio de mensagens
+            url_msg = f"https://api.telegram.org/bot{token}/sendMessage"
+            
             for etapa in fluxo:
                 if etapa["type"] == "tool":
                     payload_tool = {
