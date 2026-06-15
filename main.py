@@ -213,8 +213,16 @@ def telegram_webhook():
                         "parse_mode": "Markdown"
                     }
                     requests.post(url_msg, json=payload_tool, timeout=5)
-            
+   
             if not tentar_json(resposta_texto): 
+                # SE A IA ENTRAR EM LOOP E PASSAR DE 1000 CARACTERES, CORTA E AVISA
+                if len(resposta_texto) > 1000:
+                    resposta_texto = (
+                        "⚠️ *[Koda detectou um comportamento instável e cortou a resposta]:*\n\n" + 
+                        resposta_texto[:400] + "...\n\n"
+                        "_O modelo entrou em loop de repetição. Por favor, tente reordenar o comando._"
+                    )
+
                 payload_final = {
                     "chat_id": chat_id,
                     "text": resposta_texto,
