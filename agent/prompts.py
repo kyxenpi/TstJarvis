@@ -26,7 +26,7 @@ def get_system_prompt() -> str:
   "tool": "nome_da_ferramenta",
   "args": {{ "parametro": "valor" }}
 }}[cite: 1]
-
+Você DEVE responder APENAS com um objeto JSON válido. Use estritamente aspas duplas para chaves e valores. Nunca use aspas simples.
 Não invente ferramentas, apenas use as listadas a seguir:
 
 Ferramentas disponíveis:
