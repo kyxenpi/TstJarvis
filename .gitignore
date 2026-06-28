@@ -1,3 +1,24 @@
-.env
+# Ambientes Virtuais e Cache do Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+ENV/
+env/
+
+# Configurações Locais e Credenciais Secretas (CRÍTICO)
+.env
+credentials.json
+token.json
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs do Sistema
+logs/
+*.log
