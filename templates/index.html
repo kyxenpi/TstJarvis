@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Koda OS</title>
+    <title>Koda OS v2.1</title>
     <link
       id="dynamic-favicon"
       rel="shortcut icon"
@@ -14,108 +14,125 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-      /* Scrollbars ultra sutis e modernas */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #121214;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #232329;
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #2d2d35;
+      :root {
+        --bg-main: #121214;
+        --bg-panel: #16161a;
+        --bg-input: #19191e;
+        --border-panel: #1f1f24;
+        --border-input: #2d2d35;
+        --text-base: #d4d4d8;
+        --text-strong: #ffffff;
+        --text-muted: #71717a;
+        --accent: #10b981;
+        --accent-glow: rgba(16, 185, 129, 0.4);
       }
 
-      /* Estilização do Markdown renderizado (Mais espaçado e legível) */
+      /* Ultra Subtle Scrollbars */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-panel);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--border-input);
+      }
+
+      /* Markdown Styling (More Spacious & Elegant) */
       .markdown-content p {
         margin-bottom: 1rem;
-        line-height: 1.6;
+        line-height: 1.7;
       }
       .markdown-content p:last-child {
         margin-bottom: 0;
       }
       .markdown-content strong {
-        color: #ffffff;
+        color: var(--text-strong);
         font-weight: 600;
       }
       .markdown-content ul,
       .markdown-content ol {
         margin-bottom: 1rem;
-        padding-left: 1.5rem;
+        padding-left: 1.75rem;
       }
       .markdown-content ul {
-        list-style-type: disc;
+        list-style-type: square;
       }
       .markdown-content ol {
         list-style-type: decimal;
       }
       .markdown-content li {
-        margin-bottom: 0.5rem;
-        line-height: 1.6;
+        margin-bottom: 0.6rem;
+        line-height: 1.7;
       }
       .markdown-content pre {
-        background-color: #16161a;
-        border: 1px solid #232329;
+        background-color: var(--bg-input);
+        border: 1px solid var(--border-panel);
         padding: 1.25rem;
         border-radius: 0.75rem;
         margin: 1.25rem 0;
         overflow-x: auto;
-        font-family: monospace;
-        font-size: 0.875rem;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 0.825rem;
       }
       .markdown-content code {
-        font-family: monospace;
-        background-color: #1e1e24;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        background-color: var(--border-panel);
         padding: 0.2rem 0.4rem;
         border-radius: 0.375rem;
         font-size: 0.85em;
-        color: #f87171;
+        color: #fca5a5;
       }
       .markdown-content pre code {
         background-color: transparent;
         padding: 0;
-        color: #e4e4e7;
+        color: var(--text-base);
       }
     </style>
   </head>
   <body
-    class="h-full text-[#d4d4d8] font-sans flex antialiased overflow-hidden bg-[#121214]"
+    class="h-full text-[var(--text-base)] font-sans flex antialiased overflow-hidden bg-[var(--bg-main)]"
   >
     <aside
       id="sidebar"
-      class="w-68 h-full bg-[#16161a] border-r border-[#1f1f24] flex flex-col justify-between shrink-0 transition-all duration-300 md:translate-x-0 -translate-x-full fixed md:static z-40"
+      class="w-68 h-full bg-[var(--bg-panel)] border-r border-[var(--border-panel)] flex flex-col justify-between shrink-0 transition-transform duration-300 md:translate-x-0 -translate-x-full fixed md:static z-40"
     >
-      <div class="p-4.5 space-y-6 flex flex-col h-full overflow-hidden">
+      <div class="p-4 space-y-6 flex flex-col h-full overflow-hidden">
         <button
           onclick="novoChat()"
-          class="w-full flex items-center justify-between border border-[#232329] hover:bg-[#1e1e24] rounded-xl px-4 py-3 text-xs text-zinc-200 transition-all font-medium group"
+          class="w-full flex items-center justify-between border border-[var(--border-input)] hover:bg-[var(--border-panel)] rounded-xl px-4 py-3 text-xs text-zinc-100 transition-all font-medium group"
         >
           <span class="flex items-center gap-2.5">
             <i
               data-lucide="plus"
-              class="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors"
+              class="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors"
             ></i>
             Nova conversa
           </span>
           <kbd
-            class="text-[10px] text-zinc-500 font-mono border border-[#232329] px-1.5 py-0.5 rounded bg-[#121214]"
+            class="text-[10px] text-zinc-600 font-mono border border-[var(--border-panel)] px-1.5 py-0.5 rounded bg-[var(--bg-main)]"
             >Ctrl + N</kbd
           >
         </button>
 
         <div
-          class="p-4 bg-[#121214] border border-[#1f1f24] rounded-xl font-mono text-[11px] text-zinc-400 space-y-2 mx-1"
+          class="p-4 bg-[var(--bg-main)] border border-[var(--border-panel)] rounded-xl font-mono text-[10px] text-zinc-500 space-y-1.5 mx-1"
         >
           <div
-            class="flex justify-between items-center text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5"
+            class="flex justify-between items-center text-[10px] uppercase font-bold text-zinc-600 tracking-wider mb-2"
           >
             <span>Hardware Status</span>
             <span
-              class="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+              class="w-1.5 h-1.5 bg-[var(--accent)] rounded-full shadow-[0_0_8px_var(--accent-glow)]"
             ></span>
           </div>
           <div class="flex justify-between">
@@ -128,7 +145,7 @@
 
         <div class="flex-1 overflow-y-auto space-y-2 pr-1">
           <p
-            class="text-[10px] font-semibold text-zinc-500 px-2 uppercase tracking-wider mb-2.5"
+            class="text-[10px] font-semibold text-zinc-600 px-2 uppercase tracking-wider mb-2.5"
           >
             Recentes
           </p>
@@ -137,12 +154,12 @@
       </div>
 
       <div
-        class="p-4.5 border-t border-[#1f1f24] text-[11px] text-zinc-500 font-mono flex justify-between items-center bg-[#16161a]"
+        class="p-4 border-t border-[var(--border-panel)] text-[11px] text-zinc-600 font-mono flex justify-between items-center bg-[var(--bg-panel)]"
       >
         <span>Histórico Salvo</span>
         <button
           onclick="limparTodoHistorico()"
-          class="hover:text-red-400 transition-colors p-1 rounded-md hover:bg-[#1e1e24]"
+          class="hover:text-red-400 transition-colors p-1 rounded-md hover:bg-[var(--border-panel)]"
           title="Limpar tudo"
         >
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -150,14 +167,16 @@
       </div>
     </aside>
 
-    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#121214]">
+    <div
+      class="flex-1 flex flex-col h-full overflow-hidden bg-[var(--bg-main)]"
+    >
       <header
-        class="border-b border-[#1f1f24] bg-[#121214]/80 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-30"
+        class="border-b border-[var(--border-panel)] bg-[var(--bg-main)]/80 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-30"
       >
         <div class="flex items-center gap-4">
           <button
             onclick="toggleSidebar()"
-            class="md:hidden p-2 hover:bg-[#16161a] rounded-xl text-zinc-400 transition-colors"
+            class="md:hidden p-2 hover:bg-[var(--border-panel)] rounded-xl text-zinc-500 transition-colors"
           >
             <i data-lucide="menu" class="w-4 h-4"></i>
           </button>
@@ -165,21 +184,21 @@
             >Koda</span
           >
           <span
-            class="text-[10px] bg-[#16161a] text-zinc-400 px-2 py-0.5 rounded-md font-mono border border-[#232329]"
-            >v2.0</span
+            class="text-[10px] bg-[var(--border-panel)] text-zinc-500 px-2 py-0.5 rounded-md font-mono border border-[var(--border-input)]"
+            >v2.1</span
           >
         </div>
         <div
-          class="flex items-center gap-4 text-[11px] font-mono text-zinc-500"
+          class="flex items-center gap-4 text-[11px] font-mono text-zinc-600"
         >
           <span class="flex items-center gap-2"
-            ><i data-lucide="cpu" class="w-3.5 h-3.5 text-zinc-400"></i>
+            ><i data-lucide="cpu" class="w-3.5 h-3.5 text-zinc-500"></i>
             llama-3.3</span
           >
           <span class="text-zinc-800">|</span>
           <span class="flex items-center gap-2 text-zinc-300"
             ><span
-              class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
+              class="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_6px_var(--accent-glow)]"
             ></span>
             local-agent</span
           >
@@ -191,17 +210,19 @@
         class="flex-1 overflow-y-auto px-6 py-10 space-y-10 max-w-3xl w-full mx-auto flex flex-col"
       ></main>
 
-      <footer class="p-6 bg-[#121214] border-t border-[#1f1f24] relative">
+      <footer
+        class="p-6 bg-[var(--bg-main)] border-t border-[var(--border-panel)] relative"
+      >
         <div class="max-w-3xl w-full mx-auto relative">
           <div
-            class="absolute -top-8 right-2 flex items-center gap-2 text-[10px] font-mono text-zinc-500"
+            class="absolute -top-8 right-2 flex items-center gap-2 text-[10px] font-mono text-zinc-600"
           >
             <span
               class="w-1.5 h-1.5 rounded-full bg-emerald-500/60 animate-pulse"
             ></span>
             <span
               >Uso da Sessão:
-              <strong id="token-counter" class="text-zinc-400 font-medium"
+              <strong id="token-counter" class="text-zinc-500 font-medium"
                 >0</strong
               >
               tokens</span
@@ -209,14 +230,43 @@
           </div>
 
           <div
-            class="relative flex flex-col bg-[#16161a] border border-[#232329] rounded-2xl focus-within:border-zinc-700 focus-within:ring-1 focus-within:ring-zinc-700 transition-all p-2.5 pl-5"
+            id="image-preview-container"
+            class="hidden mb-3 flex items-center gap-3 bg-[var(--bg-panel)] border border-[var(--border-input)] p-2.5 rounded-xl max-w-max relative animate-fade-in"
+          >
+            <img
+              id="image-preview"
+              src=""
+              class="h-16 w-16 object-cover rounded-lg border border-[var(--border-input)]"
+            />
+            <div class="flex flex-col pr-6">
+              <span
+                id="preview-filename"
+                class="text-xs text-zinc-300 font-medium truncate max-w-[180px]"
+                >nome_da_imagem.png</span
+              >
+              <span
+                id="preview-filesize"
+                class="text-[10px] text-zinc-600 font-mono"
+                >0 KB</span
+              >
+            </div>
+            <button
+              onclick="removerImagemAnexa()"
+              class="absolute -top-1.5 -right-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white p-1 rounded-full border border-[var(--border-input)] transition-colors"
+            >
+              <i data-lucide="x" class="w-3 h-3"></i>
+            </button>
+          </div>
+
+          <div
+            class="relative flex flex-col bg-[var(--bg-panel)] border border-[var(--border-input)] rounded-2xl focus-within:border-zinc-700 focus-within:ring-1 focus-within:ring-zinc-700 transition-all p-2.5 pl-5 shadow-inner"
           >
             <div class="flex items-center w-full">
               <textarea
                 id="user-input"
-                placeholder="Manda a boa ou envia um comando..."
+                placeholder="Manda a boa..."
                 rows="1"
-                class="w-full bg-transparent text-[14px] text-white placeholder-zinc-500 pr-3 py-3 focus:outline-none resize-none overflow-hidden h-[46px] leading-relaxed"
+                class="w-full bg-transparent text-[14px] text-white placeholder-zinc-600 pr-3 py-3 focus:outline-none resize-none overflow-hidden h-[46px] leading-relaxed"
                 onkeypress="checkEnter(event)"
                 oninput="autoGrow(this)"
               ></textarea>
@@ -232,8 +282,8 @@
               <button
                 id="clip-btn"
                 onclick="document.getElementById('image-input').click()"
-                class="p-3 text-zinc-400 hover:text-emerald-400 transition-colors mr-1 rounded-xl hover:bg-[#1e1e24]"
-                title="Anexar imagem para OCR"
+                class="p-3 text-zinc-500 hover:text-[var(--accent)] transition-colors mr-1 rounded-xl hover:bg-[var(--border-panel)]"
+                title="Anexar imagem"
               >
                 <i
                   data-lucide="paperclip"
@@ -245,7 +295,7 @@
               <button
                 id="mic-btn"
                 onclick="alternarGravacao()"
-                class="p-3 text-zinc-400 hover:text-red-400 transition-colors mr-1 rounded-xl hover:bg-[#1e1e24]"
+                class="p-3 text-zinc-500 hover:text-red-400 transition-colors mr-1 rounded-xl hover:bg-[var(--border-panel)]"
                 title="Gravar comando de voz"
               >
                 <i data-lucide="mic" id="mic-icon" class="w-4.5 h-4.5"></i>
@@ -253,11 +303,10 @@
             </div>
 
             <div
-              class="flex items-center justify-between pt-2.5 pr-1 border-t border-[#1f1f24] mt-1.5"
+              class="flex items-center justify-between pt-2.5 pr-1 border-t border-[var(--border-panel)] mt-1.5"
             >
-              <span class="text-[10px] text-zinc-500 font-mono tracking-wide"
-                >Pressione Enter para enviar • Shift + Enter para pular
-                linha</span
+              <span class="text-[10px] text-zinc-600 font-mono tracking-wide"
+                >Enter para enviar • Shift + Enter para pular linha</span
               >
               <button
                 onclick="enviarMensagem()"
@@ -290,19 +339,11 @@
       let audioChunks = [];
       let gravando = false;
       let gravacaoTimeout;
-      let wakeWordTimeout;
-      let wakeWordRecognizer;
       let wakeWordAtiva = true;
 
       const TEMPO_SILENCIO_GRAVACAO = 5000;
-      const TEMPO_INATIVIDADE_WAKE = 180000;
 
       function init() {
-        const linkFavicon = document.getElementById("dynamic-favicon");
-        if (linkFavicon) {
-          linkFavicon.href =
-            "/static/logo.png?v=" + Math.floor(Math.random() * 10000);
-        }
         lucide.createIcons();
         renderizarListaHistorico();
         if (chatIdAtual && conversas[chatIdAtual]) {
@@ -310,7 +351,6 @@
         } else {
           novoChat();
         }
-        resetarTimerInatividadeKoda();
         setInterval(atualizarHardware, 3000);
       }
 
@@ -322,34 +362,7 @@
             document.getElementById("hw-cpu").innerText = dados.cpu + "%";
             document.getElementById("hw-ram").innerText = dados.ram + "%";
           }
-        } catch (e) {
-          console.log("Erro ao ler telemetria");
-        }
-      }
-
-      function resetarTimerInatividadeKoda() {
-        clearTimeout(wakeWordTimeout);
-        if (wakeWordAtiva) {
-          wakeWordTimeout = setTimeout(() => {
-            console.log(
-              "💤 [Koda OS] Modo de escuta suspenso por inatividade.",
-            );
-            desativarEscutaCompleta();
-          }, TEMPO_INATIVIDADE_WAKE);
-        }
-      }
-
-      function desativarEscutaCompleta() {
-        wakeWordAtiva = false;
-        if (wakeWordRecognizer) {
-          try {
-            wakeWordRecognizer.stop();
-          } catch (e) {
-            console.log("Reconhecedor já parado.");
-          }
-        }
-        const micBtn = document.getElementById("mic-btn");
-        if (micBtn) micBtn.title = "Escuta suspensa. Clique para reativar.";
+        } catch (e) {}
       }
 
       function autoGrow(element) {
@@ -379,14 +392,14 @@
           textoMensagemFixada = null;
           document
             .querySelectorAll(".pin-btn")
-            .forEach((b) => b.classList.remove("text-emerald-400"));
+            .forEach((b) => b.classList.remove("text-[var(--accent)]"));
           removerAlertaFixadoVisual();
         } else {
           textoMensagemFixada = texto;
           document
             .querySelectorAll(".pin-btn")
-            .forEach((b) => b.classList.remove("text-emerald-400"));
-          elementoBotao.classList.add("text-emerald-400");
+            .forEach((b) => b.classList.remove("text-[var(--accent)]"));
+          elementoBotao.classList.add("text-[var(--accent)]");
           mostrarAlertaFixadoVisual();
         }
       }
@@ -396,8 +409,8 @@
         const alerta = document.createElement("div");
         alerta.id = "alerta-fixado";
         alerta.className =
-          "fixed bottom-32 left-1/2 -translate-x-1/2 bg-[#16161a] border border-emerald-950/50 px-5 py-2.5 rounded-xl text-xs text-emerald-400 flex items-center gap-2 shadow-2xl font-mono z-50 animate-bounce";
-        alerta.innerHTML = `<i data-lucide="pin" class="w-3.5 h-3.5 fill-emerald-400"></i> Contexto fixado para o próximo prompt`;
+          "fixed bottom-32 left-1/2 -translate-x-1/2 bg-[var(--bg-panel)] border border-[var(--border-input)] px-5 py-2.5 rounded-xl text-xs text-[var(--accent)] flex items-center gap-2 shadow-2xl font-mono z-50 animate-bounce";
+        alerta.innerHTML = `<i data-lucide="pin" class="w-3.5 h-3.5 fill-[var(--accent)]"></i> Contexto fixado para o próximo prompt`;
         document.body.appendChild(alerta);
         lucide.createIcons();
       }
@@ -418,26 +431,26 @@
 
         const botaoPin =
           type === "user" || (type === "koda" && !text.trim().startsWith("{"))
-            ? `<button onclick="alternarPin('${textoEscapadoProBotao}', this)" class="pin-btn opacity-0 group-hover:opacity-100 absolute right-0 top-0 text-zinc-500 hover:text-emerald-400 transition-all p-1.5 rounded-lg hover:bg-[#16161a]" title="Fixar mensagem como contexto">
+            ? `<button onclick="alternarPin('${textoEscapadoProBotao}', this)" class="pin-btn opacity-0 group-hover:opacity-100 absolute right-0 top-0 text-zinc-500 hover:text-[var(--accent)] transition-all p-1.5 rounded-lg hover:bg-[var(--border-panel)]" title="Fixar mensagem como contexto">
                 <i data-lucide="pin" class="w-3.5 h-3.5"></i>
                </button>`
             : "";
 
         if (type === "user") {
           msgDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-xl bg-[#232329] flex items-center justify-center text-zinc-200 shrink-0 mt-0.5 font-mono text-xs font-bold border border-[#2d2d35]">U</div>
+                    <div class="w-8 h-8 rounded-xl bg-[var(--bg-main)] flex items-center justify-center text-zinc-200 shrink-0 mt-0.5 font-mono text-xs font-bold border border-[var(--border-panel)]">U</div>
                     <div class="space-y-1.5 flex-1 pr-8 overflow-hidden">
-                        <p class="text-xs font-semibold text-zinc-400 tracking-wide">Você</p>
-                        <div class="text-[14px] text-zinc-200 leading-relaxed break-words">${escapeHtml(text)}</div>
+                        <p class="text-xs font-semibold text-zinc-600 tracking-wide">Você</p>
+                        <div class="text-[14px] text-zinc-100 leading-relaxed break-words">${escapeHtml(text)}</div>
                     </div>
                     ${botaoPin}`;
         } else if (type === "koda") {
           const conteudoHtml = formatarRespostaKoda(text);
           msgDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-xl bg-[#16161a] border border-[#232329] flex items-center justify-center text-zinc-200 shrink-0 mt-0.5 shadow-sm"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-zinc-300"></i></div>
+                    <div class="w-8 h-8 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-input)] flex items-center justify-center text-zinc-200 shrink-0 mt-0.5 shadow-sm"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-zinc-300"></i></div>
                     <div class="space-y-2 flex-1 pr-8 overflow-hidden">
-                        <p class="text-xs font-semibold text-zinc-400 tracking-wide">Koda</p>
-                        <div class="text-[14px] text-zinc-300 leading-relaxed markdown-content break-words">${conteudoHtml}</div>
+                        <p class="text-xs font-semibold text-zinc-600 tracking-wide">Koda</p>
+                        <div class="text-[14px] text-zinc-200 leading-relaxed markdown-content break-words">${conteudoHtml}</div>
                     </div>
                     ${botaoPin}`;
 
@@ -449,13 +462,6 @@
             falarTexto(text);
             responderComVozModoAtivo = false;
           }
-        } else if (type === "tool") {
-          msgDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-xl bg-[#1e1b18] border border-[#3c322c] flex items-center justify-center text-[#fbd38d] shrink-0 mt-0.5"><i data-lucide="terminal" class="w-3.5 h-3.5"></i></div>
-                    <div class="space-y-2 flex-1 font-mono text-xs overflow-hidden">
-                        <p class="text-[#dd6b20] font-bold text-[10px] tracking-wider uppercase">[System Tool Log]</p>
-                        <pre class="p-4 bg-[#141210] border border-[#25201c] text-[#fbd38d]/90 rounded-xl overflow-x-auto whitespace-pre-wrap leading-relaxed">${escapeHtml(text)}</pre>
-                    </div>`;
         }
 
         chatContainer.appendChild(msgDiv);
@@ -527,11 +533,7 @@
       }
 
       function limparTodoHistorico() {
-        if (
-          confirm(
-            "Deseja apagar permanentemente todo seu histórico de conversas?",
-          )
-        ) {
+        if (confirm("Deseja apagar permanentemente todo seu histórico?")) {
           conversas = {};
           localStorage.clear();
           novoChat();
@@ -547,7 +549,7 @@
         idsOrdenados.forEach((id) => {
           const ativo = id === chatIdAtual;
           const itemDiv = document.createElement("div");
-          itemDiv.className = `group/item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${ativo ? "bg-[#121214] border border-[#1f1f24] text-white shadow-sm" : "text-zinc-400 border border-transparent hover:bg-[#121214]/50 hover:text-zinc-200"}`;
+          itemDiv.className = `group/item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${ativo ? "bg-[var(--bg-main)] border border-[var(--border-panel)] text-white shadow-inner" : "text-zinc-500 border border-transparent hover:bg-[var(--bg-panel)] hover:text-zinc-200"}`;
           itemDiv.setAttribute("onclick", `carregarConversa('${id}')`);
 
           itemDiv.innerHTML = `
@@ -555,7 +557,7 @@
                         <i data-lucide="message-square" class="w-3.5 h-3.5 shrink-0 opacity-60"></i>
                         ${escapeHtml(conversas[id].titulo)}
                     </span>
-                    <button onclick="deletarConversa('${id}', event)" class="opacity-0 group-hover/item:opacity-100 hover:text-red-400 transition-all p-1 rounded-md hover:bg-[#1e1e24]">
+                    <button onclick="deletarConversa('${id}', event)" class="opacity-0 group-hover/item:opacity-100 hover:text-red-400 transition-all p-1 rounded-md hover:bg-[var(--border-panel)]">
                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
                     </button>
                 `;
@@ -589,22 +591,8 @@
         const micBtn = document.getElementById("mic-btn");
         const micIcon = document.getElementById("mic-icon");
 
-        if (!wakeWordAtiva) {
-          wakeWordAtiva = true;
-          console.log(
-            "⚡ [Koda OS] Escuta reativada manualmente pelo usuário.",
-          );
-        }
-        resetarTimerInatividadeKoda();
-
         if (!gravando) {
           try {
-            if (wakeWordRecognizer) {
-              try {
-                wakeWordRecognizer.stop();
-              } catch (e) {}
-            }
-
             const stream = await navigator.mediaDevices.getUserMedia({
               audio: true,
             });
@@ -620,7 +608,6 @@
 
               if (audioChunks.length === 0) {
                 restaurarBotaoMicPadrao();
-                if (wakeWordAtiva) iniciarEscutaWakeWord();
                 return;
               }
 
@@ -647,12 +634,9 @@
                   autoGrow(userInput);
                   enviarMensagem();
                 }
-              } catch (erro) {
-                console.error("Erro ao transcrever áudio:", erro);
-              }
+              } catch (erro) {}
 
               restaurarBotaoMicPadrao();
-              if (wakeWordAtiva) iniciarEscutaWakeWord();
             };
 
             mediaRecorder.start();
@@ -662,7 +646,6 @@
 
             gravacaoTimeout = setTimeout(() => {
               if (gravando) {
-                console.log("⏱️ Silêncio longo detectado. Abortando captura.");
                 audioChunks = [];
                 try {
                   mediaRecorder.stream
@@ -674,9 +657,7 @@
               }
             }, TEMPO_SILENCIO_GRAVACAO);
           } catch (err) {
-            alert("Não foi possível acessar o microfone.");
-            console.error(err);
-            if (wakeWordAtiva) iniciarEscutaWakeWord();
+            alert("Microfone não acessível.");
           }
         } else {
           try {
@@ -692,7 +673,7 @@
         const micIcon = document.getElementById("mic-icon");
         if (micBtn && micIcon) {
           micBtn.className =
-            "p-3 text-zinc-400 hover:text-red-400 transition-colors mr-1 rounded-xl hover:bg-[#1e1e24]";
+            "p-3 text-zinc-500 hover:text-red-400 transition-colors mr-1 rounded-xl hover:bg-[var(--border-panel)]";
           micIcon.setAttribute("data-lucide", "mic");
           lucide.createIcons();
         }
@@ -701,21 +682,49 @@
       function atualizarIndicadorFoto() {
         const input = document.getElementById("image-input");
         const clipBtn = document.getElementById("clip-btn");
+        const previewContainer = document.getElementById(
+          "image-preview-container",
+        );
+        const previewImage = document.getElementById("image-preview");
+        const previewFilename = document.getElementById("preview-filename");
+        const previewFilesize = document.getElementById("preview-filesize");
+
         if (input.files && input.files[0]) {
-          // Muda a cor do ícone para indicar que há um arquivo anexado
-          clipBtn.classList.remove("text-zinc-400");
+          const file = input.files[0];
           clipBtn.classList.add(
-            "text-emerald-400",
+            "text-[var(--accent)]",
             "bg-emerald-950/20",
             "border",
             "border-emerald-900/30",
           );
-          clipBtn.title = `Imagem anexada: ${input.files[0].name} (Clique para trocar)`;
+
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            previewImage.src = e.target.result;
+            previewFilename.innerText = file.name;
+            const tamanhoKB = (file.size / 1024).toFixed(1);
+            previewFilesize.innerText = `${tamanhoKB} KB`;
+            previewContainer.classList.remove("hidden");
+            lucide.createIcons();
+          };
+          reader.readAsDataURL(file);
         } else {
-          clipBtn.className =
-            "p-3 text-zinc-400 hover:text-emerald-400 transition-colors mr-1 rounded-xl hover:bg-[#1e1e24]";
-          clipBtn.title = "Anexar imagem para OCR";
+          removerImagemAnexa();
         }
+      }
+
+      function removerImagemAnexa() {
+        const input = document.getElementById("image-input");
+        const clipBtn = document.getElementById("clip-btn");
+        const previewContainer = document.getElementById(
+          "image-preview-container",
+        );
+
+        input.value = "";
+        clipBtn.className =
+          "p-3 text-zinc-500 hover:text-[var(--accent)] transition-colors mr-1 rounded-xl hover:bg-[var(--border-panel)]";
+        clipBtn.title = "Anexar imagem";
+        previewContainer.classList.add("hidden");
       }
 
       async function enviarMensagem() {
@@ -723,21 +732,11 @@
         const imageInput = document.getElementById("image-input");
         const temImagem = imageInput.files && imageInput.files[0];
 
-        // Só cancela se não houver texto E não houver imagem
         if (!texto && !temImagem) return;
 
-        resetarTimerInatividadeKoda();
-
-        if (document.activeElement === userInput || !responderComVozModoAtivo) {
-          if (document.activeElement === userInput) {
-            responderComVozModoAtivo = false;
-          }
-        }
-
-        // Se houver uma foto, mostra uma mensagem simulada no chat do usuário
         if (temImagem) {
           appendMessage(
-            `[Enviando imagem: ${imageInput.files[0].name}] ${texto}`,
+            `[Imagem: ${imageInput.files[0].name}] ${texto}`,
             "user",
           );
         } else {
@@ -747,44 +746,35 @@
         userInput.value = "";
         userInput.style.height = "46px";
 
-        // Prepara o FormData em vez do JSON bruto
         const formData = new FormData();
         formData.append("mensagem", texto);
-        formData.append("session_id", chatIdAtual || "web_default_session");
+        formData.append("session_id", chatIdAtual);
 
         if (temImagem) {
           formData.append("imagem", imageInput.files[0]);
         }
 
-        // Reseta o input de imagem e o visual do botão após o envio
-        imageInput.value = "";
-        atualizarIndicadorFoto();
+        removerImagemAnexa();
 
         try {
           const response = await fetch("/chat", {
             method: "POST",
-            body: formData, // O navegador define o Content-Type correto para FormData automaticamente
+            body: formData,
           });
 
           const dados = await response.json();
 
           if (dados.tokens_usados) {
             const elementoContador = document.getElementById("token-counter");
-            let totalAtual = parseInt(elementoContador.innerText) || 0;
-            elementoContador.innerText = totalAtual + dados.tokens_usados;
+            elementoContador.innerText =
+              parseInt(elementoContador.innerText) + dados.tokens_usados;
           }
 
-          if (dados.fluxo && Array.isArray(dados.fluxo)) {
-            dados.fluxo.forEach((item) => {
-              if (item.type === "jarvis" || item.type === "koda") {
-                appendMessage(item.content, "koda");
-              } else if (item.type === "tool") {
-                appendMessage(item.content, "tool");
-              }
-            });
+          if (dados.fluxo) {
+            dados.fluxo.forEach((item) => appendMessage(item.content, "koda"));
           }
         } catch (erro) {
-          appendMessage("Erro de conexão com o terminal local.", "koda");
+          appendMessage("Erro de conexão.", "koda");
         }
       }
 
@@ -792,30 +782,15 @@
         window.speechSynthesis.cancel();
         if (texto.trim().startsWith("{")) return;
 
-        let textoLimpo = texto
-          .replace(/\*+/g, "")
-          .replace(/`+/g, "")
-          .replace(/#+/g, "")
-          .replace(/-\s+/g, "");
+        let textoLimpo = texto.replace(/[\*`#\-]/g, "");
         const falar = new SpeechSynthesisUtterance(textoLimpo);
         falar.lang = "pt-BR";
         falar.rate = 1.05;
-        falar.pitch = 0.85;
 
         const vozes = window.speechSynthesis.getVoices();
         let vozKoda =
-          vozes.find(
-            (v) => v.lang.includes("pt-BR") && v.name.includes("Daniel"),
-          ) ||
-          vozes.find(
-            (v) =>
-              v.lang.includes("pt-BR") && v.name.toLowerCase().includes("male"),
-          ) ||
-          vozes.find(
-            (v) => v.lang.includes("pt-BR") && v.name.includes("Google"),
-          ) ||
-          vozes.find((v) => v.lang.includes("pt-BR"));
-
+          vozes.find((v) => v.lang === "pt-BR" && v.name.includes("Daniel")) ||
+          vozes.find((v) => v.lang === "pt-BR");
         if (vozKoda) falar.voice = vozKoda;
         window.speechSynthesis.speak(falar);
       }
@@ -823,91 +798,7 @@
       window.speechSynthesis.onvoiceschanged = () =>
         window.speechSynthesis.getVoices();
 
-      function ativarModoFoco(minutos) {
-        let segundosRestantes = minutos * 60;
-        document.getElementById("sidebar").classList.add("hidden");
-        document.querySelector("header").classList.add("opacity-10");
-        chatContainer.innerHTML = `<div class="flex flex-col items-center justify-center flex-1 space-y-5 my-auto animate-fade-in">
-        <div class="text-7xl font-mono font-bold tracking-widest text-white animate-pulse" id="pomodoro-timer">00:00</div>
-        <p class="text-xs text-zinc-500 font-mono tracking-wider uppercase">Modo de Foco Ativo • Concentre-se nos códigos</p>
-        <button onclick="desativarModoFoco()" class="px-5 py-2 border border-[#232329] hover:bg-red-950/20 rounded-xl text-xs text-red-400 transition-colors font-mono">Abortar Foco</button>
-    </div>`;
-
-        cronometroFoco = setInterval(() => {
-          let min = Math.floor(segundosRestantes / 60);
-          let seg = segundosRestantes % 60;
-          const timerEl = document.getElementById("pomodoro-timer");
-          if (timerEl) {
-            timerEl.innerText = `${min.toString().padStart(2, "0")}:${seg.toString().padStart(2, "0")}`;
-          }
-
-          if (segundosRestantes <= 0) {
-            clearInterval(cronometroFoco);
-            desativarModoFoco();
-            falarTexto(
-              "Modo de foco concluído. Excelente trabalho. Faça uma pausa.",
-            );
-          }
-          segundosRestantes--;
-        }, 1000);
-      }
-
-      function desativarModoFoco() {
-        if (cronometroFoco) clearInterval(cronometroFoco);
-        document.getElementById("sidebar").classList.remove("hidden");
-        document.querySelector("header").classList.remove("opacity-10");
-        novoChat();
-      }
-
-      function iniciarEscutaWakeWord() {
-        if (!("webkitSpeechRecognition" in window)) {
-          console.log("Wake Word não suportada neste navegador.");
-          return;
-        }
-
-        if (!wakeWordAtiva || gravando) return;
-
-        wakeWordRecognizer = new webkitSpeechRecognition();
-        wakeWordRecognizer.continuous = true;
-        wakeWordRecognizer.interimResults = false;
-        wakeWordRecognizer.lang = "pt-BR";
-
-        wakeWordRecognizer.onresult = (event) => {
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              let textoOuvido = event.results[i][0].transcript
-                .trim()
-                .toLowerCase();
-              console.log("🎙 Honorável Koda [Escuta Ativa]:", textoOuvido);
-
-              if (textoOuvido.includes("koda") && !gravando) {
-                console.log(
-                  "⚡ Palavra-chave detectada! Iniciando gravação...",
-                );
-                wakeWordRecognizer.stop();
-                alternarGravacao();
-              }
-            }
-          }
-        };
-
-        wakeWordRecognizer.onend = () => {
-          if (wakeWordAtiva && !gravando) {
-            try {
-              wakeWordRecognizer.start();
-            } catch (e) {}
-          }
-        };
-
-        try {
-          wakeWordRecognizer.start();
-        } catch (e) {}
-      }
-
-      window.onload = () => {
-        init();
-        iniciarEscutaWakeWord();
-      };
+      init();
     </script>
   </body>
 </html>

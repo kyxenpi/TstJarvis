@@ -15,8 +15,9 @@ class ToolExecutor:
         # Executa apenas uma ferramenta por vez
         self.pool = ThreadPoolExecutor(max_workers=1)
 
-        # Delay antes de executar qualquer ferramenta
+        # Intervalo mínimo entre execuções
         self.tool_delay = 0.75
+        self.last_execution = 0.0
 
     def parse_json_safely(self, text: str) -> Optional[Dict[str, Any]]:
         try:
@@ -30,31 +31,29 @@ class ToolExecutor:
                 partes = text_clean.split("```")
                 for parte in partes:
                     parte_limpa = parte.strip()
+
                     if parte_limpa.startswith("json"):
                         parte_limpa = parte_limpa[4:].strip()
 
-                    if parte_limpa.startswith("{") and parte_limpa.endswith("}"):
+                    if (
+                        parte_limpa.startswith("{")
+                        and parte_limpa.endswith("}")
+                    ):
                         text_clean = parte_limpa
                         break
 
-            # Extrai somente o JSON
-            match = re.search(r"(\{.*\})", text_clean, re.DOTALL)
-            if match:
-                text_clean = match.group(1)
-            else:
+            # Extrai apenas o JSON
+            match = re.search(r"\{[\s\S]*\}", text_clean)
+
+            if not match:
                 return None
 
-            # Normaliza quebras de linha
-            text_clean = re.sub(
-                r'(\"[^\"]*?\")\s*',
-                lambda m: m.group(1).replace("\n", "\\n"),
-                text_clean,
-            )
-
-            return json.loads(text_clean)
+            return json.loads(match.group(0))
 
         except Exception as e:
-            logger.warning(f"Falha ao tratar e parsear JSON estruturado: {e}")
+            logger.warning(
+                f"Falha ao tratar e parsear JSON estruturado: {e}"
+            )
             return None
 
     def execute(self, tool_name: str, args: Any) -> ToolResult:
@@ -67,12 +66,18 @@ class ToolExecutor:
             )
 
         info = registry.tools[tool_name]
-
         start_time = time.time()
 
         try:
-            # Pequena pausa entre chamadas de ferramentas
-            time.sleep(self.tool_delay)
+            # Garante um intervalo mínimo entre ferramentas
+            now = time.time()
+
+            elapsed = now - self.last_execution
+
+            if elapsed < self.tool_delay:
+                time.sleep(self.tool_delay - elapsed)
+
+            self.last_execution = time.time()
 
             future = self.pool.submit(info["func"], args)
 
@@ -115,6 +120,5 @@ class ToolExecutor:
                 execution_time=elapsed,
                 error=str(e)
             )
-
 
 tool_executor = ToolExecutor()
