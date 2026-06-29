@@ -22,3 +22,4 @@ token.json
 # Logs do Sistema
 logs/
 *.log
+database/memory.db

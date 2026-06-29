@@ -221,6 +221,27 @@
                 oninput="autoGrow(this)"
               ></textarea>
 
+              <input
+                type="file"
+                id="image-input"
+                accept="image/*"
+                class="hidden"
+                onchange="atualizarIndicadorFoto()"
+              />
+
+              <button
+                id="clip-btn"
+                onclick="document.getElementById('image-input').click()"
+                class="p-3 text-zinc-400 hover:text-emerald-400 transition-colors mr-1 rounded-xl hover:bg-[#1e1e24]"
+                title="Anexar imagem para OCR"
+              >
+                <i
+                  data-lucide="paperclip"
+                  id="clip-icon"
+                  class="w-4.5 h-4.5"
+                ></i>
+              </button>
+
               <button
                 id="mic-btn"
                 onclick="alternarGravacao()"
@@ -677,9 +698,33 @@
         }
       }
 
+      function atualizarIndicadorFoto() {
+        const input = document.getElementById("image-input");
+        const clipBtn = document.getElementById("clip-btn");
+        if (input.files && input.files[0]) {
+          // Muda a cor do ícone para indicar que há um arquivo anexado
+          clipBtn.classList.remove("text-zinc-400");
+          clipBtn.classList.add(
+            "text-emerald-400",
+            "bg-emerald-950/20",
+            "border",
+            "border-emerald-900/30",
+          );
+          clipBtn.title = `Imagem anexada: ${input.files[0].name} (Clique para trocar)`;
+        } else {
+          clipBtn.className =
+            "p-3 text-zinc-400 hover:text-emerald-400 transition-colors mr-1 rounded-xl hover:bg-[#1e1e24]";
+          clipBtn.title = "Anexar imagem para OCR";
+        }
+      }
+
       async function enviarMensagem() {
         const texto = userInput.value.trim();
-        if (!texto) return;
+        const imageInput = document.getElementById("image-input");
+        const temImagem = imageInput.files && imageInput.files[0];
+
+        // Só cancela se não houver texto E não houver imagem
+        if (!texto && !temImagem) return;
 
         resetarTimerInatividadeKoda();
 
@@ -689,23 +734,36 @@
           }
         }
 
-        appendMessage(texto, "user");
+        // Se houver uma foto, mostra uma mensagem simulada no chat do usuário
+        if (temImagem) {
+          appendMessage(
+            `[Enviando imagem: ${imageInput.files[0].name}] ${texto}`,
+            "user",
+          );
+        } else {
+          appendMessage(texto, "user");
+        }
+
         userInput.value = "";
         userInput.style.height = "46px";
 
-        const historicoEnvio = conversas[chatIdAtual]
-          ? conversas[chatIdAtual].mensagens
-          : [];
+        // Prepara o FormData em vez do JSON bruto
+        const formData = new FormData();
+        formData.append("mensagem", texto);
+        formData.append("session_id", chatIdAtual || "web_default_session");
+
+        if (temImagem) {
+          formData.append("imagem", imageInput.files[0]);
+        }
+
+        // Reseta o input de imagem e o visual do botão após o envio
+        imageInput.value = "";
+        atualizarIndicadorFoto();
 
         try {
           const response = await fetch("/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              mensagem: texto,
-              historico: historicoEnvio,
-              mensagem_fixada: textoMensagemFixada,
-            }),
+            body: formData, // O navegador define o Content-Type correto para FormData automaticamente
           });
 
           const dados = await response.json();

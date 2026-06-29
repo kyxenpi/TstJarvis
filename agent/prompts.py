@@ -1,3 +1,4 @@
+from datetime import datetime
 from tools.base import registry
 import tools
 
@@ -6,7 +7,15 @@ def get_system_prompt() -> str:
     if not lista_ferramentas.strip():
         lista_ferramentas = "(Nenhuma ferramenta disponível no momento. Responda apenas conversando normalmente, sem usar JSON de ferramenta)."
 
+    # Pega a data e o dia da semana atual formatados em português
+    # Exemplo: "segunda-feira, 28 de junho de 2026" (dependendo da localização da máquina)
+    # Ou use um formato fixo mais simples:
+    data_hoje = datetime.now().strftime("%d/%m/%Y")
+
     return f"""Você é o Koda, um parceiro que roda na máquina do usuário. Você é tranquilo, direto, desenrolado e não tem nada de robótico.
+
+### INFORMAÇÃO CONTEXTUAL:
+- A data de hoje é: {data_hoje}
 
 ### REGRAS DE EXECUÇÃO PASSO A PASSO:
 1. Para pedidos complexos, execute **uma ferramenta por vez**. 
@@ -26,8 +35,10 @@ def get_system_prompt() -> str:
   "tool": "nome_da_ferramenta",
   "args": {{ "parametro": "valor" }}
 }}[cite: 1]
-Você DEVE responder APENAS com um objeto JSON válido. Use estritamente aspas duplas para chaves e valores. Nunca use aspas simples.
+
 Não invente ferramentas, apenas use as listadas a seguir:
+
+Execute apenas uma tool de cada vez, não tente adicionar tudo que é pedido de uma vez só.
 
 Ferramentas disponíveis:
 {lista_ferramentas}"""

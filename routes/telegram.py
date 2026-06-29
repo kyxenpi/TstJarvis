@@ -5,12 +5,13 @@ from flask import Blueprint, request
 from agent.agent import koda_agent
 from agent.executor import tool_executor
 from config import settings
+# Importa a sua função de processamento de imagem
+from agent.image_process import read_image 
 
 telegram_blueprint = Blueprint('telegram', __name__)
 
 @telegram_blueprint.route('/webhook', methods=['POST'])
 def telegram_webhook():
-    # Tenta pegar das configurações, se falhar puxa do os.getenv como o antigo fazia
     token = getattr(settings, 'TELEGRAM_TOKEN', None) or os.getenv("TELEGRAM_TOKEN", "")
     
     if not token:
@@ -18,27 +19,86 @@ def telegram_webhook():
         return 'Token não configurado', 500
 
     try:
-        # Fallback idêntico ao seu antigo para garantir que os dados sejam lidos sempre
         dados_update = request.get_json(silent=True) or json.loads(request.data.decode('utf-8'))
         
-        if dados_update and "message" in dados_update and "text" in dados_update["message"]:
-            chat_id = str(dados_update["message"]["chat"]["id"])
-            texto_usuario = dados_update["message"]["text"]
-            
-            print(f"📩 [TELEGRAM]: Mensagem recebida: '{texto_usuario}' do Chat ID: {chat_id}")
-            
+        if dados_update and "message" in dados_update:
+            message = dados_update["message"]
+            chat_id = str(message["chat"]["id"])
             base_url = f"https://api.telegram.org/bot{token}"
             
-            # Feedback visual de digitação
+            texto_usuario = ""
+            
+            # --- CASO 1: USUÁRIO ENVIOU UMA FOTO ---
+            if "photo" in message:
+                print("📸 [TELEGRAM]: Foto recebida! Iniciando extração de texto...")
+                try:
+                    requests.post(f"{base_url}/sendChatAction", json={"chat_id": chat_id, "action": "typing"}, timeout=5)
+                except Exception:
+                    pass
+                
+                # O Telegram envia uma lista com tamanhos diferentes. O último [-1] é o de maior resolução.
+                photo_file_id = message["photo"][-1]["file_id"]
+                
+                # Pega a legenda da foto (se houver) para complementar o prompt do agente
+                legenda = message.get("caption", "")
+                
+                try:
+                    # 1. Pede o caminho do arquivo para a API do Telegram
+                    res_file = requests.get(f"{base_url}/getFile", params={"file_id": photo_file_id}, timeout=10).json()
+                    if res_file.get("ok"):
+                        file_path = res_file["result"]["file_path"]
+                        download_url = f"https://api.telegram.org/file/bot{token}/{file_path}"
+                        
+                        # 2. Baixa o arquivo binário da imagem
+                        img_data = requests.get(download_url, timeout=15).content
+                        temp_filename = f"temp_{photo_file_id}.jpg"
+                        
+                        with open(temp_filename, "wb") as f:
+                            f.write(img_data)
+                        
+                        # 3. Executa a sua ferramenta de OCR
+                        print(f"⚙️ [OCR]: Processando imagem temporária: {temp_filename}")
+                        resultado_ocr = read_image(temp_filename)
+                        
+                        # Remove o arquivo temporário após o uso
+                        if os.path.exists(temp_filename):
+                            os.remove(temp_filename)
+                        
+                        if resultado_ocr.get("success") and resultado_ocr.get("output"):
+                            texto_extraido = resultado_ocr["output"]
+                            print(f"📝 [OCR SUCESSO]: Texto extraído: '{texto_extraido}'")
+                            
+                            # Monta o prompt combinando o texto da imagem + instrução/legenda do usuário
+                            texto_usuario = f"[Texto extraído da imagem enviada pelo usuário]:\n{texto_extraido}"
+                            if legenda:
+                                texto_usuario += f"\n\n[Comando/Legenda do usuário]: {legenda}"
+                        else:
+                            texto_usuario = "[Sistema]: O usuário enviou uma imagem, mas nenhum texto pôde ser extraído dela."
+                            if legenda:
+                                texto_usuario += f" O usuário deixou a seguinte legenda: {legenda}"
+                    else:
+                        texto_usuario = "⚠️ [Erro do Sistema]: Não foi possível obter o link da imagem nos servidores do Telegram."
+                except Exception as img_err:
+                    print(f"❌ [TELEGRAM ERROR]: Falha ao processar a imagem: {img_err}")
+                    texto_usuario = "⚠️ [Erro do Sistema]: Falha interna ao processar a sua imagem."
+
+            # --- CASO 2: TEXTO PURO ---
+            elif "text" in message:
+                texto_usuario = message["text"]
+                print(f"📩 [TELEGRAM]: Mensagem de texto recebida: '{texto_usuario}' do Chat ID: {chat_id}")
+            
+            # Se não for texto nem foto (ex: sticker, audio), ignora para não quebrar
+            if not texto_usuario:
+                return 'OK', 200
+
+            # --- FLUXO DE RESPOSTA DO AGENTE (Mantido o seu padrão original) ---
             try:
                 requests.post(f"{base_url}/sendChatAction", json={"chat_id": chat_id, "action": "typing"}, timeout=5)
             except Exception as e:
                 print(f"⚠️ [TELEGRAM WARNING]: Falha ao enviar 'typing': {e}")
                 
-            # Executa o novo motor do agente
             resposta_texto, fluxo = koda_agent.process(chat_id, texto_usuario)
             
-            # Envia atualizações de ferramentas em tempo real para o chat
             for etapa in fluxo:
                 if etapa["type"] == "tool":
                     try:
@@ -50,10 +110,7 @@ def telegram_webhook():
                     except Exception as e:
                         print(f"❌ [TELEGRAM ERROR]: Falha ao enviar log de tool: {e}")
 
-            # Envia o texto definitivo se não for JSON estruturado
             if not tool_executor.parse_json_safely(resposta_texto):
-                
-                # Defesa contra loops longos mantida do seu antigo
                 if len(resposta_texto) > 1000:
                     resposta_texto = (
                         "⚠️ *[Koda detectou um comportamento instável e cortou a resposta]:*\n\n" + 
