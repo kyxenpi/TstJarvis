@@ -100,7 +100,7 @@ def telegram_webhook():
             resposta_texto, fluxo = koda_agent.process(chat_id, texto_usuario)
             
             for etapa in fluxo:
-                if etapa["type"] == "tool":
+                if etapa["type"] in ("jarvis", "tool_call") and etapa.get("content"):
                     try:
                         requests.post(f"{base_url}/sendMessage", json={
                             "chat_id": chat_id,
@@ -108,7 +108,7 @@ def telegram_webhook():
                             "parse_mode": "Markdown"
                         }, timeout=5)
                     except Exception as e:
-                        print(f"❌ [TELEGRAM ERROR]: Falha ao enviar log de tool: {e}")
+                        print(f"❌ [TELEGRAM ERROR]: Falha ao enviar msg: {e}")
 
             if not tool_executor.parse_json_safely(resposta_texto):
                 if len(resposta_texto) > 1000:

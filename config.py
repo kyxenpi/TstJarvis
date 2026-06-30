@@ -17,7 +17,7 @@ class Config:
     
     MODEL_PRIMARY: str = "llama-3.3-70b-versatile"
     MODEL_SECONDARY: str = "llama-3.1-8b-instant"
-    MAX_AGENT_STEPS: int = 3
+    MAX_AGENT_STEPS: int = 8
     DEFAULT_TIMEOUT: float = 45.0
     
     GOOGLE_CREDENTIALS_JSON: str = field(default_factory=lambda: os.getenv("GOOGLE_CREDENTIALS_JSON", ""))

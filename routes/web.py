@@ -68,9 +68,8 @@ def chat_web():
     if not mensagem:
         return jsonify({"erro": "Nenhuma mensagem ou imagem foi enviada"}), 400
 
-    # Processa o agente normalmente com o prompt gerado
-    _, fluxo = koda_agent.process(session_id, mensagem)
-    return jsonify({"fluxo": fluxo})
+    resposta_texto, fluxo = koda_agent.process(session_id, mensagem)
+    return jsonify({"fluxo": fluxo, "resposta": resposta_texto})
 
 @web_blueprint.route('/telemetria', methods=['GET'])
 def telemetria():
