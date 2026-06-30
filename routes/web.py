@@ -1,9 +1,10 @@
 import os
+import uuid
+from pathlib import Path
 from flask import Blueprint, render_template, request, jsonify
 from agent.agent import koda_agent
 from agent.models import model_manager
 from core.utils import get_system_telemetry
-# Importa a sua função de processamento de imagem
 from agent.image_process import read_image 
 
 web_blueprint = Blueprint('web', __name__)
@@ -31,12 +32,10 @@ def chat_web():
         if arquivo_img and arquivo_img.filename != '':
             print(f"📸 [WEB CHAT]: Imagem recebida: {arquivo_img.filename}. Processando OCR...")
             
-            temp_filename = f"temp_web_{arquivo_img.filename}"
+            ext = Path(arquivo_img.filename).suffix if '.' in arquivo_img.filename else ''
+            temp_filename = f"/tmp/koda_web_{uuid.uuid4().hex}{ext}"
             try:
-                # Salva a imagem temporariamente no disco
                 arquivo_img.save(temp_filename)
-                
-                # Executa o seu EasyOCR
                 resultado_ocr = read_image(temp_filename)
                 
                 # Remove o arquivo temporário imediatamente

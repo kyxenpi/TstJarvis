@@ -4,6 +4,7 @@ import io
 import time
 import ast
 import base64
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -14,7 +15,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from googleapiclient.errors import HttpError
 
-from tools.base import tool
+from tools.base import tool, IS_CLOUD
 from config import settings
 from core.security import SecurityLevel
 from core.logger import setup_logger
@@ -82,6 +83,11 @@ def get_google_credentials():
                 creds = None
 
         if not creds:
+            if IS_CLOUD:
+                raise Exception(
+                    "Credenciais Google expiradas. Configure GOOGLE_TOKEN_JSON "
+                    "como variável de ambiente no Render com um token renovado."
+                )
             if Path('credentials.json').exists():
                 flow = InstalledAppFlow.from_client_secrets_file(
                     'credentials.json', settings.SCOPES

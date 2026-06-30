@@ -1,6 +1,7 @@
 flask>=3.0
 gunicorn>=21.2
 groq>=1.0
+psutil>=5.9
 requests>=2.31
 google-auth>=2.0
 google-auth-oauthlib>=1.0

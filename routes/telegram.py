@@ -1,11 +1,11 @@
 import os
 import json
+import uuid
 import requests
 from flask import Blueprint, request
 from agent.agent import koda_agent
 from agent.executor import tool_executor
 from config import settings
-# Importa a sua função de processamento de imagem
 from agent.image_process import read_image 
 
 telegram_blueprint = Blueprint('telegram', __name__)
@@ -51,7 +51,7 @@ def telegram_webhook():
                         
                         # 2. Baixa o arquivo binário da imagem
                         img_data = requests.get(download_url, timeout=15).content
-                        temp_filename = f"temp_{photo_file_id}.jpg"
+                        temp_filename = f"/tmp/koda_tg_{uuid.uuid4().hex}.jpg"
                         
                         with open(temp_filename, "wb") as f:
                             f.write(img_data)

@@ -14,5 +14,4 @@ COPY . .
 
 EXPOSE 5000
 
-# Altere a última linha do seu Dockerfile para ficar exatamente assim:
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
+CMD gunicorn --bind "0.0.0.0:${PORT:-5000}" wsgi:app
