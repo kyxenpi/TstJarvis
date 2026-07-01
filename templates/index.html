@@ -58,7 +58,7 @@
     .msg-row.koda .msg-avatar { background: #111; color: #666; }
     .msg-row.koda .msg-avatar svg { width: 15px; height: 15px; }
 
-    .msg-content { max-width: 85%; display: flex; flex-direction: column; }
+    .msg-content { max-width: 85%; display: flex; flex-direction: column; gap: 6px; }
     .msg-bubble { padding: 10px 16px; font-size: 14px; line-height: 1.6; }
     .msg-row.user .msg-bubble { background: #1a1a2e; border-radius: 16px 16px 4px 16px; color: #e8e8ea; }
     .msg-row.koda .msg-bubble { background: #111; border-radius: 16px 16px 16px 4px; color: #d0d0d4; }
@@ -67,8 +67,23 @@
     .markdown-body p:last-child { margin-bottom: 0; }
     .markdown-body strong { color: #fff; font-weight: 600; }
     .markdown-body code { background: #1a1a2e; padding: 2px 6px; border-radius: 6px; font-size: 12.5px; font-family: 'SF Mono', 'JetBrains Mono', monospace; color: #a78bfa; }
-    .markdown-body pre { background: #0a0a0f; border: 1px solid #1a1a2e; padding: 12px; border-radius: 12px; margin: 8px 0; overflow-x: auto; }
-    .markdown-body pre code { background: none; padding: 0; color: #bbb; }
+    .markdown-body pre {
+      background: #0a0a0f; border: 1px solid #1a1a2e; padding: 0;
+      border-radius: 12px; margin: 8px 0; overflow: hidden; position: relative;
+    }
+    .markdown-body pre .copy-btn {
+      position: absolute; top: 6px; right: 6px;
+      background: #1a1a2e; border: 1px solid #222; color: #666;
+      width: 28px; height: 28px; border-radius: 6px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; opacity: 0;
+    }
+    .markdown-body pre:hover .copy-btn { opacity: 1; }
+    .markdown-body pre .copy-btn:hover { background: #222; color: #a78bfa; border-color: #a78bfa; }
+    .markdown-body pre .copy-btn svg { width: 14px; height: 14px; }
+    .markdown-body pre code {
+      display: block; padding: 14px 16px; overflow-x: auto; background: none; color: #bbb;
+    }
     .markdown-body ul, .markdown-body ol { padding-left: 20px; margin-bottom: 6px; }
     .markdown-body a { color: #6366f1; }
     .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #fff; margin: 10px 0 4px; }
@@ -137,35 +152,24 @@
     .sf button:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
     .sf button svg { width: 13px; height: 13px; }
 
-    @media (max-width: 600px) { header { padding: 10px 14px; } #chat-container { padding: 14px 10px 4px; } footer { padding: 6px 10px 16px; } .msg-content { max-width: 90%; } }
+    @media (max-width: 600px) {
+      header { padding: 10px 14px; }
+      #chat-container { padding: 14px 10px 4px; }
+      footer { padding: 6px 10px 16px; }
+      .msg-content { max-width: 90%; }
+    }
 
-    /* ============ TOASTS ============ */
     #toast-container {
-      position: fixed;
-      bottom: 80px;
-      right: 16px;
-      z-index: 100;
-      display: flex;
-      flex-direction: column-reverse;
-      gap: 6px;
-      pointer-events: none;
+      position: fixed; bottom: 80px; right: 16px; z-index: 100;
+      display: flex; flex-direction: column-reverse; gap: 6px; pointer-events: none;
     }
     .toast {
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 12px;
-      background: #13131a;
-      border: 1px solid #1e1e2e;
-      color: #bbb;
+      padding: 8px 14px; border-radius: 10px; font-size: 12px;
+      background: #13131a; border: 1px solid #1e1e2e; color: #bbb;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      animation: toastIn 0.25s ease;
-      max-width: 280px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      line-height: 1.4;
-      pointer-events: auto;
-      backdrop-filter: blur(10px);
+      animation: toastIn 0.25s ease; max-width: 280px;
+      display: flex; align-items: center; gap: 8px; line-height: 1.4;
+      pointer-events: auto; backdrop-filter: blur(10px);
     }
     .toast-icon { width: 16px; height: 16px; flex-shrink: 0; }
     .toast-icon.loading { animation: spin 1s linear infinite; }
@@ -178,48 +182,42 @@
     .toast.removing { animation: toastOut 0.2s ease forwards; }
     @keyframes toastOut { to { opacity: 0; transform: translateY(4px) scale(0.95); } }
 
-    /* ============ NEURAL NETWORK CANVAS ============ */
-    #nn-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      display: none;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
+    .thinking-indicator {
+      display: flex; gap: 4px; padding: 4px 0; margin-left: 40px;
     }
-    #nn-overlay.open { display: flex; align-items: center; justify-content: center; flex-direction: column; }
-    #nn-canvas {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0; left: 0;
+    .thinking-indicator span {
+      width: 6px; height: 6px; border-radius: 50%; background: #555;
+      animation: thinkingBounce 1.2s ease-in-out infinite;
     }
-    .nn-label {
-      position: relative;
-      z-index: 1;
-      color: #888;
-      font-size: 13px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      animation: pulseLabel 2s ease-in-out infinite;
+    .thinking-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes thinkingBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
     }
-    @keyframes pulseLabel { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
-    .nn-close-btn {
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-      background: #1a1a2e;
-      border: 1px solid #333;
-      color: #888;
-      padding: 8px 24px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.15s;
+
+    .agent-step {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; font-size: 12px; color: #666;
+      margin-left: 40px; animation: fadeIn 0.15s ease;
     }
-    .nn-close-btn:hover { border-color: #555; color: #ccc; }
+    .agent-step .step-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .agent-step.step-tool { color: #a78bfa; }
+    .agent-step.step-done { color: #34d399; }
+    .agent-step.step-error { color: #ef4444; }
+    .agent-step.step-thinking { color: #fbbf24; }
+
+    .streaming-cursor::after {
+      content: '|';
+      animation: blink 0.7s step-end infinite;
+      color: #a78bfa;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .keyboard-hint {
+      position: absolute; bottom: -18px; right: 4px;
+      font-size: 10px; color: #333;
+    }
   </style>
 </head>
 <body>
@@ -227,7 +225,7 @@
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="fecharSidebar()"></div>
   <aside id="sidebar">
     <div class="sh">
-      <span>Historico</span>
+      <span>Histórico</span>
       <button class="sh-close" onclick="fecharSidebar()"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div id="history-list"></div>
@@ -250,14 +248,6 @@
 
   <div id="chat-container"></div>
 
-  <!-- Neural Network Overlay -->
-  <div id="nn-overlay">
-    <canvas id="nn-canvas"></canvas>
-    <div class="nn-label">Gravando...</div>
-    <button class="nn-close-btn" onclick="pararGravacao()">Parar</button>
-  </div>
-
-  <!-- Toast Container -->
   <div id="toast-container"></div>
 
   <div id="image-preview-container">
@@ -272,14 +262,14 @@
   <footer>
     <div class="input-wrap">
       <div class="input-area">
-        <textarea id="user-input" placeholder="Digite sua mensagem..." rows="1" onkeypress="checkEnter(event)" oninput="autoGrow(this)"></textarea>
+        <textarea id="user-input" placeholder="Digite sua mensagem..." rows="1" onkeydown="checkEnter(event)" oninput="autoGrow(this)"></textarea>
         <input type="file" id="image-input" accept="image/*" class="hidden" onchange="atualizarIndicadorFoto()" />
         <div class="input-actions">
           <button onclick="document.getElementById('image-input').click()" title="Anexar imagem"><i data-lucide="paperclip"></i></button>
-          <button onclick="toggleGravacao()" title="Comando de voz" id="mic-btn"><i data-lucide="mic" id="mic-icon"></i></button>
           <button class="send-btn" id="send-btn" onclick="enviarMensagem()"><i data-lucide="arrow-up"></i></button>
         </div>
       </div>
+      <div class="keyboard-hint">Enter para enviar · Shift+Enter para nova linha</div>
     </div>
   </footer>
 
@@ -290,223 +280,14 @@
     const historyList = document.getElementById('history-list');
     const sendBtn = document.getElementById('send-btn');
     const toastContainer = document.getElementById('toast-container');
-    const nnOverlay = document.getElementById('nn-overlay');
-    const nnCanvas = document.getElementById('nn-canvas');
 
     let conversas = JSON.parse(localStorage.getItem('koda_chats')) || {};
     let chatIdAtual = localStorage.getItem('koda_current_chat_id') || null;
-
-    /* ========= NEURAL NETWORK VIZ ========= */
-    const nn = { ctx: null, nodes: [], connections: [], animId: null, time: 0, energy: 0, audioStream: null, audioCtx: null, analyser: null, dataArray: null };
-
-    function initNN() {
-      nnCanvas.width = nnCanvas.offsetWidth * devicePixelRatio;
-      nnCanvas.height = nnCanvas.offsetHeight * devicePixelRatio;
-      nn.ctx = nnCanvas.getContext('2d');
-      nn.ctx.scale(devicePixelRatio, devicePixelRatio);
-      const w = nnCanvas.offsetWidth, h = nnCanvas.offsetHeight;
-      nn.nodes = [];
-      nn.connections = [];
-      const count = Math.min(70, Math.floor(w * h / 12000));
-      for (let i = 0; i < count; i++) {
-        nn.nodes.push({
-          x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3, z: (Math.random() - 0.5) * 2,
-          baseSize: 1.5 + Math.random() * 3, phase: Math.random() * Math.PI * 2,
-          speed: 0.2 + Math.random() * 0.4
-        });
-      }
-      for (let i = 0; i < nn.nodes.length; i++) {
-        for (let j = i + 1; j < nn.nodes.length; j++) {
-          const dx = nn.nodes[i].x - nn.nodes[j].x, dy = nn.nodes[i].y - nn.nodes[j].y, dz = nn.nodes[i].z - nn.nodes[j].z;
-          const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
-          if (d < 1.5) nn.connections.push({ i, j, dist: d, baseAlpha: 0.15 + Math.random() * 0.2 });
-        }
-      }
-    }
-
-    function drawNN() {
-      const w = nnCanvas.offsetWidth, h = nnCanvas.offsetHeight;
-      const ctx = nn.ctx;
-      ctx.clearRect(0, 0, w, h);
-      nn.time += 0.008;
-      const energy = nn.energy;
-
-      const cx = w / 2, cy = h / 2;
-      const scale = Math.min(w, h) * 0.3;
-
-      const rotY = Math.sin(nn.time * 0.15) * 0.4;
-      const rotX = Math.sin(nn.time * 0.1) * 0.2;
-
-      const proj = [];
-      for (const n of nn.nodes) {
-        let x = n.x, y = n.y, z = n.z;
-        const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
-        const x1 = x * cosY - z * sinY;
-        const z1 = x * sinY + z * cosY;
-        x = x1; z = z1;
-        const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
-        const y1 = y * cosX - z * sinX;
-        z = y * sinX + z * cosX;
-        y = y1;
-        const perspective = 3 / (3 + z);
-        proj.push({
-          sx: cx + x * scale * perspective,
-          sy: cy + y * scale * perspective,
-          size: n.baseSize * perspective,
-          z: z,
-          phase: n.phase,
-          speed: n.speed
-        });
-      }
-
-      const pulse = 0.5 + energy * 0.5;
-      const glow = Math.min(1, energy * 2.5);
-
-      for (const conn of nn.connections) {
-        const p1 = proj[conn.i], p2 = proj[conn.j];
-        const avgZ = (p1.z + p2.z) / 2;
-        const alpha = conn.baseAlpha * (1 + glow * 1.5) * (1 - avgZ / 3);
-        if (alpha < 0.01) continue;
-        ctx.beginPath();
-        ctx.moveTo(p1.sx, p1.sy);
-        ctx.lineTo(p2.sx, p2.sy);
-        ctx.strokeStyle = `rgba(130, 140, 255, ${alpha})`;
-        ctx.lineWidth = 0.5 + glow * 1.5;
-        ctx.stroke();
-      }
-
-      for (let i = 0; i < nn.nodes.length; i++) {
-        const p = proj[i];
-        const wave = Math.sin(nn.time * p.speed * 2 + p.phase) * 0.3 + 0.7;
-        const size = p.size * (0.5 + wave * 0.5 * pulse);
-        const alpha = 0.4 + glow * 0.6;
-        const gradient = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, size * 2.5);
-        gradient.addColorStop(0, `rgba(160, 170, 255, ${alpha})`);
-        gradient.addColorStop(0.4, `rgba(120, 130, 255, ${alpha * 0.6})`);
-        gradient.addColorStop(1, `rgba(80, 90, 200, 0)`);
-        ctx.beginPath();
-        ctx.arc(p.sx, p.sy, size * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(p.sx, p.sy, size * 0.8, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200, 210, 255, ${0.5 + glow * 0.5})`;
-        ctx.fill();
-      }
-    }
-
-    function startNN() {
-      nnOverlay.classList.add('open');
-      nnOverlay.style.display = 'flex';
-      initNN();
-      nn.energy = 0;
-      function loop() {
-        drawNN();
-        nn.animId = requestAnimationFrame(loop);
-      }
-      loop();
-      nnCanvas.addEventListener('resize', initNN);
-    }
-
-    function stopNN() {
-      nnOverlay.classList.remove('open');
-      nnOverlay.style.display = 'none';
-      if (nn.animId) { cancelAnimationFrame(nn.animId); nn.animId = null; }
-    }
-
-    /* ========= AUDIO + NN ========= */
-    let gravacaoAtiva = false;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let gravacaoTimeout = null;
-
-    async function setupAudioAnalyser(stream) {
-      try {
-        nn.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = nn.audioCtx.createMediaStreamSource(stream);
-        nn.analyser = nn.audioCtx.createAnalyser();
-        nn.analyser.fftSize = 256;
-        source.connect(nn.analyser);
-        nn.dataArray = new Uint8Array(nn.analyser.frequencyBinCount);
-        function readAudio() {
-          if (!nn.analyser) return;
-          nn.analyser.getByteFrequencyData(nn.dataArray);
-          let sum = 0;
-          for (let i = 0; i < nn.dataArray.length; i++) sum += nn.dataArray[i];
-          nn.energy = sum / nn.dataArray.length / 255;
-          if (gravacaoAtiva) requestAnimationFrame(readAudio);
-        }
-        readAudio();
-      } catch(e) { console.log('Audio viz error:', e); }
-    }
-
-    async function toggleGravacao() {
-      const micBtn = document.getElementById('mic-btn');
-      if (gravacaoAtiva) {
-        pararGravacao();
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        nn.audioStream = stream;
-
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-        mediaRecorder.onstop = async () => {
-          clearTimeout(gravacaoTimeout);
-          stopNN();
-          if (nn.audioCtx) { nn.audioCtx.close(); nn.audioCtx = null; }
-          nn.analyser = null;
-          if (audioChunks.length === 0) return;
-          const blob = new Blob(audioChunks, { type: 'audio/webm' });
-          const formData = new FormData();
-          formData.append('audio', blob, 'voz.webm');
-          try {
-            showToast('Transcrevendo audio...', 'loading');
-            const res = await fetch('/transcrever', { method: 'POST', body: formData });
-            const data = await res.json();
-            removeAllToasts();
-            if (data.texto && data.texto.trim()) {
-              userInput.value = data.texto;
-              autoGrow(userInput);
-              enviarMensagem();
-            } else {
-              showToast('Nada foi detectado', 'error');
-            }
-          } catch(e) {
-            removeAllToasts();
-            showToast('Erro na transcricao', 'error');
-          }
-        };
-        mediaRecorder.start();
-        gravacaoAtiva = true;
-        micBtn.style.color = '#ef4444';
-        startNN();
-        setupAudioAnalyser(stream);
-
-        gravacaoTimeout = setTimeout(() => {
-          if (gravacaoAtiva) pararGravacao();
-        }, 8000);
-      } catch(e) {
-        showToast('Microfone nao acessivel', 'error');
-      }
-    }
-
-    function pararGravacao() {
-      if (!gravacaoAtiva) return;
-      gravacaoAtiva = false;
-      clearTimeout(gravacaoTimeout);
-      document.getElementById('mic-btn').style.color = '';
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-      }
-      if (nn.audioStream) {
-        nn.audioStream.getTracks().forEach(t => t.stop());
-        nn.audioStream = null;
-      }
-    }
+    let streaming = false;
+    let currentStreamRow = null;
+    let currentStreamBubble = null;
+    let currentStreamMd = null;
+    let abortController = null;
 
     /* ========= TOASTS ========= */
     function showToast(message, type = 'info', duration = 3000) {
@@ -526,9 +307,7 @@
       return toast;
     }
 
-    function removeAllToasts() {
-      toastContainer.innerHTML = '';
-    }
+    function removeAllToasts() { toastContainer.innerHTML = ''; }
 
     /* ========= CHAT ========= */
     function init() {
@@ -569,8 +348,12 @@
       bubble.className = 'msg-bubble';
       const md = document.createElement('div');
       md.className = 'markdown-body';
-      if (type === 'koda') { md.innerHTML = marked.parse(text); }
-      else { md.textContent = text; }
+      if (type === 'koda') {
+        md.innerHTML = marked.parse(text);
+        addCopyButtons(md);
+      } else {
+        md.textContent = text;
+      }
       bubble.appendChild(md);
       content.appendChild(bubble);
       row.appendChild(avatar);
@@ -589,7 +372,91 @@
       }
     }
 
+    function addCopyButtons(container) {
+      container.querySelectorAll('pre').forEach(pre => {
+        if (pre.querySelector('.copy-btn')) return;
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.innerHTML = '<i data-lucide="copy"></i>';
+        btn.title = 'Copiar código';
+        btn.onclick = () => {
+          const code = pre.querySelector('code');
+          const text = code ? code.textContent : '';
+          navigator.clipboard.writeText(text).then(() => {
+            btn.innerHTML = '<i data-lucide="check"></i>';
+            lucide.createIcons();
+            setTimeout(() => {
+              btn.innerHTML = '<i data-lucide="copy"></i>';
+              lucide.createIcons();
+            }, 1500);
+          });
+        };
+        pre.appendChild(btn);
+        pre.style.position = 'relative';
+      });
+    }
+
+    function createStreamRow() {
+      currentStreamRow = document.createElement('div');
+      currentStreamRow.className = 'msg-row koda';
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.innerHTML = '<i data-lucide="sparkles"></i>';
+      const content = document.createElement('div');
+      content.className = 'msg-content';
+      currentStreamBubble = document.createElement('div');
+      currentStreamBubble.className = 'msg-bubble';
+      currentStreamMd = document.createElement('div');
+      currentStreamMd.className = 'markdown-body streaming-cursor';
+      currentStreamBubble.appendChild(currentStreamMd);
+      content.appendChild(currentStreamBubble);
+      currentStreamRow.appendChild(avatar);
+      currentStreamRow.appendChild(content);
+      chatContainer.appendChild(currentStreamRow);
+      lucide.createIcons();
+    }
+
+    function appendThinkingStep(type, message) {
+      const step = document.createElement('div');
+      step.className = `agent-step step-${type}`;
+      const icons = { tool: 'zap', done: 'check-circle-2', error: 'alert-circle', thinking: 'loader-2' };
+      step.innerHTML = `<i data-lucide="${icons[type] || 'circle'}" class="step-icon"></i><span>${message}</span>`;
+      if (currentStreamRow) {
+        const content = currentStreamRow.querySelector('.msg-content');
+        if (content) content.appendChild(step);
+        else currentStreamRow.appendChild(step);
+      } else {
+        chatContainer.appendChild(step);
+      }
+      lucide.createIcons();
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function removeThinkingSteps() {
+      if (currentStreamRow) {
+        currentStreamRow.querySelectorAll('.agent-step').forEach(el => el.remove());
+      }
+    }
+
+    function updateStreamContent(text) {
+      if (!currentStreamMd) return;
+      currentStreamMd.innerHTML = marked.parse(text);
+      addCopyButtons(currentStreamMd);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function finalizeStream(fullText) {
+      if (!currentStreamMd) return;
+      currentStreamMd.classList.remove('streaming-cursor');
+      currentStreamMd.innerHTML = marked.parse(fullText);
+      addCopyButtons(currentStreamMd);
+      currentStreamRow = null;
+      currentStreamBubble = null;
+      currentStreamMd = null;
+    }
+
     function novoChat() {
+      if (streaming) cancelarStream();
       chatIdAtual = 'chat_' + Date.now();
       conversas[chatIdAtual] = { titulo: 'Nova conversa', mensagens: [] };
       localStorage.setItem('koda_current_chat_id', chatIdAtual);
@@ -600,6 +467,7 @@
     }
 
     function carregarConversa(id) {
+      if (streaming) cancelarStream();
       if (!conversas[id]) return;
       chatIdAtual = id;
       localStorage.setItem('koda_current_chat_id', id);
@@ -618,7 +486,7 @@
     }
 
     function limparTodoHistorico() {
-      if (confirm('Apagar todo o historico?')) {
+      if (confirm('Apagar todo o histórico?')) {
         conversas = {};
         localStorage.clear();
         novoChat();
@@ -644,7 +512,21 @@
         event.preventDefault();
         enviarMensagem();
       }
+      if (event.key === 'Escape' && streaming) {
+        cancelarStream();
+      }
     }
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        novoChat();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !streaming) {
+        e.preventDefault();
+        enviarMensagem();
+      }
+    });
 
     function atualizarIndicadorFoto() {
       const input = document.getElementById('image-input');
@@ -667,11 +549,28 @@
       document.getElementById('image-preview-container').classList.remove('show');
     }
 
+    function cancelarStream() {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+      }
+      streaming = false;
+      if (currentStreamMd) {
+        currentStreamMd.classList.remove('streaming-cursor');
+      }
+      currentStreamRow = null;
+      currentStreamBubble = null;
+      currentStreamMd = null;
+      sendBtn.disabled = false;
+      sendBtn.style.opacity = userInput.value.trim() ? '1' : '0.25';
+    }
+
     async function enviarMensagem() {
       const texto = userInput.value.trim();
       const imageInput = document.getElementById('image-input');
       const temImagem = imageInput.files && imageInput.files[0];
       if (!texto && !temImagem) return;
+      if (streaming) return;
 
       appendMessage(temImagem ? '[Imagem: ' + imageInput.files[0].name + '] ' + texto : texto, 'user');
       userInput.value = '';
@@ -684,33 +583,99 @@
       if (temImagem) formData.append('imagem', imageInput.files[0]);
       removerImagemAnexa();
 
+      streaming = true;
+      sendBtn.disabled = true;
+      createStreamRow();
+
       try {
-        const res = await fetch('/chat', { method: 'POST', body: formData });
-        const dados = await res.json();
-        if (dados.resposta) {
-          appendMessage(dados.resposta, 'koda');
+        abortController = new AbortController();
+        const res = await fetch('/chat/stream', {
+          method: 'POST',
+          body: formData,
+          signal: abortController.signal
+        });
+
+        if (!res.ok) {
+          updateStreamContent('Erro de conexão.');
+          finalizeStream('Erro de conexão.');
+          streaming = false;
+          sendBtn.disabled = false;
+          return;
         }
-        if (dados.fluxo) {
-          dados.fluxo.forEach(item => {
-            if (item.type === 'tool_call') {
-              let msg = item.tool_name || 'ferramenta';
-              if (item.tool_args) {
-                const args = typeof item.tool_args === 'string' ? item.tool_args : JSON.stringify(item.tool_args);
-                if (args.length > 40) msg += ': ' + args.substring(0,40) + '...';
-                else msg += ': ' + args;
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (!data) continue;
+
+            try {
+              const event = JSON.parse(data);
+
+              switch (event.type) {
+                case 'token':
+                  fullText += event.content;
+                  updateStreamContent(fullText);
+                  break;
+                case 'thinking':
+                  appendThinkingStep('thinking', event.content);
+                  break;
+                case 'tool_call':
+                  appendThinkingStep('tool', `🔧 ${event.tool}`);
+                  break;
+                case 'tool_result':
+                  appendThinkingStep('done', `✅ ${event.tool}: ${event.output ? event.output.substring(0, 60) : 'ok'}`);
+                  break;
+                case 'tool_error':
+                  appendThinkingStep('error', `❌ ${event.tool}: ${event.error}`);
+                  break;
+                case 'status':
+                  if (event.content === 'streaming') {
+                    removeThinkingSteps();
+                  }
+                  break;
+                case 'done':
+                  removeThinkingSteps();
+                  finalizeStream(event.content);
+                  if (chatIdAtual) {
+                    conversas[chatIdAtual].mensagens.push({ text: event.content, type: 'koda' });
+                    localStorage.setItem('koda_chats', JSON.stringify(conversas));
+                  }
+                  break;
+                case 'error':
+                  updateStreamContent(event.content);
+                  finalizeStream(event.content);
+                  break;
               }
-              showToast('\u2699\uFE0F ' + msg, 'tool', 2500);
-            } else if (item.type === 'tool_results' && item.content) {
-              const results = Array.isArray(item.content) ? item.content : [item.content];
-              results.forEach(r => {
-                if (r.success) showToast('\u2705 ' + (r.tool || '') + ': ' + (r.output ? r.output.substring(0, 60) : 'ok'), 'success', 3000);
-                else if (r.error) showToast('\u274C ' + (r.tool || '') + ': ' + r.error.substring(0, 60), 'error', 4000);
-              });
+            } catch (e) {
+              console.error('SSE parse error:', e);
             }
-          });
+          }
         }
-      } catch(e) {
-        appendMessage('Erro de conexao.', 'koda');
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        const errMsg = 'Erro de conexão.';
+        if (currentStreamMd) {
+          currentStreamMd.classList.remove('streaming-cursor');
+          currentStreamMd.textContent = errMsg;
+        }
+      } finally {
+        streaming = false;
+        sendBtn.disabled = false;
+        sendBtn.style.opacity = userInput.value.trim() ? '1' : '0.25';
+        abortController = null;
       }
     }
 

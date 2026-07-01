@@ -10,8 +10,11 @@ class MemoryDatabase:
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(str(self.db_path), timeout=10)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=5000")
         return conn
 
     def _init_db(self) -> None:
@@ -31,6 +34,7 @@ class MemoryDatabase:
                     value TEXT NOT NULL
                 )
             """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_history_session ON history(session_id, id)")
             conn.commit()
 
     def save_message(self, session_id: str, role: str, content: str) -> None:

@@ -2,6 +2,7 @@ import time
 import re
 import json
 import ast
+import hashlib
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from typing import Dict, Any, Optional
 
@@ -13,7 +14,7 @@ logger = setup_logger("ToolExecutor")
 
 class ToolExecutor:
     def __init__(self) -> None:
-        self.pool = ThreadPoolExecutor(max_workers=1)
+        self.pool = ThreadPoolExecutor(max_workers=4)
         self.tool_delay = 0.5
         self.last_execution = 0.0
         self.default_timeout = 40.0

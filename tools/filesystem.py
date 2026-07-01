@@ -1,13 +1,31 @@
+import os
 from pathlib import Path
 from typing import Any, Dict
 from tools.base import tool
 from core.security import SecurityLevel
 
+ALLOWED_DIRS = [Path("/app"), Path.home(), Path.cwd()]
+
+
+def _resolve_path(user_path: str) -> Path | None:
+    p = Path(user_path).resolve()
+    for base in ALLOWED_DIRS:
+        base_resolved = base.resolve()
+        try:
+            p.relative_to(base_resolved)
+            return p
+        except ValueError:
+            continue
+    return None
+
 
 @tool("list_files", security_level=SecurityLevel.SAFE, cloud_compatible=False)
 def list_files(args: Any = None) -> str:
     """Lista arquivos e pastas de um diretório (padrão: atual)."""
-    path = Path(args.get("path", ".") if isinstance(args, dict) else (args or "."))
+    raw = args.get("path", ".") if isinstance(args, dict) else (args or ".")
+    path = _resolve_path(raw)
+    if not path:
+        return f"Erro: Acesso negado a '{raw}'."
     if not path.exists():
         return f"Erro: Diretório '{path}' não existe."
     if not path.is_dir():
@@ -22,7 +40,10 @@ def list_files(args: Any = None) -> str:
 @tool("read_file", security_level=SecurityLevel.SAFE, cloud_compatible=False)
 def read_file(args: Any) -> str:
     """Lê e retorna o conteúdo de um arquivo local."""
-    path = Path(args if isinstance(args, str) else args.get("path", ""))
+    raw = args if isinstance(args, str) else args.get("path", "")
+    path = _resolve_path(raw)
+    if not path:
+        return f"Erro: Acesso negado a '{raw}'."
     if not path.exists():
         return f"Erro: '{path}' não existe."
     if not path.is_file():
@@ -33,7 +54,9 @@ def read_file(args: Any) -> str:
 @tool("write_file", security_level=SecurityLevel.MEDIUM, cloud_compatible=False)
 def write_file(args: Dict[str, Any]) -> str:
     """Cria ou sobrescreve um arquivo com conteúdo. Requer 'path' e 'content'."""
-    path = Path(args["path"])
+    path = _resolve_path(args["path"])
+    if not path:
+        return f"Erro: Acesso negado a '{args['path']}'."
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(args["content"], encoding="utf-8")
     return f"Arquivo '{path}' salvo."
@@ -42,7 +65,9 @@ def write_file(args: Dict[str, Any]) -> str:
 @tool("append_to_file", security_level=SecurityLevel.MEDIUM, cloud_compatible=False)
 def append_to_file(args: Dict[str, Any]) -> str:
     """Adiciona texto ao final de um arquivo existente."""
-    path = Path(args["path"])
+    path = _resolve_path(args["path"])
+    if not path:
+        return f"Erro: Acesso negado a '{args['path']}'."
     if not path.exists():
         return f"Erro: '{path}' não existe. Use write_file."
     with open(path, "a", encoding="utf-8") as f:
@@ -54,7 +79,10 @@ def append_to_file(args: Dict[str, Any]) -> str:
 def search_files(args: Any) -> str:
     """Busca arquivos por padrão glob em um diretório. Retorna até max_results (padrão 30)."""
     pattern = args if isinstance(args, str) else args.get("pattern", "*")
-    root = Path(args.get("root", ".") if isinstance(args, dict) else ".")
+    raw = args.get("root", ".") if isinstance(args, dict) else "."
+    root = _resolve_path(raw)
+    if not root:
+        return f"Erro: Acesso negado a '{raw}'."
     max_results = args.get("max_results", 30) if isinstance(args, dict) else 30
 
     if not root.exists():
@@ -70,7 +98,10 @@ def search_files(args: Any) -> str:
 @tool("file_info", security_level=SecurityLevel.SAFE, cloud_compatible=False)
 def file_info(args: Any) -> str:
     """Retorna informações detalhadas de um arquivo ou diretório."""
-    path = Path(args if isinstance(args, str) else args.get("path", ""))
+    raw = args if isinstance(args, str) else args.get("path", "")
+    path = _resolve_path(raw)
+    if not path:
+        return f"Erro: Acesso negado a '{raw}'."
     if not path.exists():
         return f"Erro: '{path}' não existe."
 
@@ -88,7 +119,10 @@ def file_info(args: Any) -> str:
 @tool("delete_file", security_level=SecurityLevel.DANGEROUS, cloud_compatible=False)
 def delete_file(args: Any) -> str:
     """Remove um arquivo ou diretório vazio (PERIGOSO)."""
-    path = Path(args if isinstance(args, str) else args.get("path", ""))
+    raw = args if isinstance(args, str) else args.get("path", "")
+    path = _resolve_path(raw)
+    if not path:
+        return f"Erro: Acesso negado a '{raw}'."
     if not path.exists():
         return f"Erro: '{path}' não existe."
     try:

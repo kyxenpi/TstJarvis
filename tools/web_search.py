@@ -6,6 +6,68 @@ from tools.base import tool
 from core.security import SecurityLevel
 
 
+def _parse_ddg_results(html: str, max_results: int = 5) -> list:
+    results = []
+
+    class ResultLinkParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self._capture = False
+            self._text = ""
+
+        def handle_starttag(self, tag, attrs):
+            attrs_dict = dict(attrs)
+            classes = attrs_dict.get("class", "")
+            if tag == "a" and "result__a" in classes:
+                self._capture = True
+                self._text = ""
+
+        def handle_data(self, data):
+            if self._capture:
+                self._text += data
+
+        def handle_endtag(self, tag):
+            if self._capture and tag == "a":
+                self._capture = False
+                if self._text.strip():
+                    results.append(self._text.strip())
+
+    parser = ResultLinkParser()
+    parser.feed(html)
+    if results:
+        return results[:max_results]
+
+    for line in html.split("\n"):
+        if "class=\"result__snippet\"" in line:
+            m = re.search(r'>([^<]+)<', line)
+            if m:
+                results.append(m.group(1))
+                if len(results) >= max_results:
+                    break
+    if results:
+        return results
+
+    for line in html.split("\n"):
+        m = re.search(r'class="[^"]*result[^"]*".*?href="([^"]*)"[^>]*>(.*?)<', line, re.DOTALL)
+        if m:
+            title = re.sub(r'<[^>]+>', '', m.group(2)).strip()
+            if title and len(title) > 3:
+                results.append(title)
+                if len(results) >= max_results:
+                    break
+    if results:
+        return results
+
+    texts = re.findall(r'(?:^|\n)\s*<a[^>]*>(.*?)</a>', html, re.DOTALL)
+    for t in texts:
+        clean = re.sub(r'<[^>]+>', '', t).strip()
+        if clean and len(clean) > 10:
+            results.append(clean)
+            if len(results) >= max_results:
+                break
+    return results
+
+
 @tool("web_search", security_level=SecurityLevel.SAFE, cloud_compatible=True)
 def web_search(args: Any) -> str:
     """Busca na web usando DuckDuckGo e retorna os primeiros resultados."""
@@ -23,40 +85,7 @@ def web_search(args: Any) -> str:
         if resp.status_code != 200:
             return f"Erro na busca: HTTP {resp.status_code}"
 
-        class ResultParser(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.results = []
-                self._capture = False
-                self._text = ""
-
-            def handle_starttag(self, tag, attrs):
-                attrs_dict = dict(attrs)
-                if tag == "a" and "result__a" in attrs_dict.get("class", ""):
-                    self._capture = True
-                    self._text = ""
-
-            def handle_data(self, data):
-                if self._capture:
-                    self._text += data
-
-            def handle_endtag(self, tag):
-                if self._capture and tag == "a":
-                    self._capture = False
-                    if self._text.strip():
-                        self.results.append(self._text.strip())
-
-        parser = ResultParser()
-        parser.feed(resp.text)
-        results = parser.results[:5]
-
-        if not results:
-            for line in resp.text.split("\n"):
-                if "class=\"result__snippet\"" in line:
-                    m = re.search(r'>([^<]+)<', line)
-                    if m:
-                        results.append(m.group(1))
-            results = results[:5]
+        results = _parse_ddg_results(resp.text)
 
         if not results:
             return "Nenhum resultado encontrado."

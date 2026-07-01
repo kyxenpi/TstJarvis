@@ -42,3 +42,9 @@ class ToolRegistry:
 
 registry = ToolRegistry()
 tool = registry.register
+
+
+@tool("list_tools", security_level=SecurityLevel.SAFE, cloud_compatible=True)
+def list_tools(args: Any = None) -> str:
+    """Lista todas as ferramentas disponíveis para o usuário com descrição e nível de privilégio."""
+    return registry.get_tool_manifest()

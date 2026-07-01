@@ -51,4 +51,11 @@ registry.tools["planilhas"] = registry.tools["google_sheets"]
 # Web API custom
 registry.tools["api"] = registry.tools["web_api"]
 
+# Tool listing
+registry.tools["ferramentas"] = registry.tools["list_tools"]
+registry.tools["tools"] = registry.tools["list_tools"]
+registry.tools["help"] = registry.tools["list_tools"]
+registry.tools["ajuda"] = registry.tools["list_tools"]
+registry.tools["comandos"] = registry.tools["list_tools"]
+
 TOOLS_MANIFEST = registry.tools

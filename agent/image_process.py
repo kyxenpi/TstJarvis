@@ -1,7 +1,11 @@
 import os
+import warnings
 import requests
 
-OCR_API_KEY = os.environ.get("OCR_SPACE_API_KEY") or "helloworld"
+OCR_API_KEY = os.environ.get("OCR_SPACE_API_KEY")
+if not OCR_API_KEY:
+    warnings.warn("OCR_SPACE_API_KEY não definida. OCR pode falhar.")
+    OCR_API_KEY = "helloworld"
 
 
 def read_image(image_input: str):

@@ -4,7 +4,6 @@ from database.memory_db import db
 
 
 class ContextManager:
-    SYSTEM_TOKENS_ESTIMATE = 2000
 
     @staticmethod
     def build(session_id: str, max_history: int = 8) -> List[Dict[str, str]]:
